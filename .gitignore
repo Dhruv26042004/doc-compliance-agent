@@ -1,0 +1,25 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Node
+node_modules/
+.next/
+out/
+
+# Data (raw datasets are downloaded by script, not committed)
+data/raw/*
+!data/raw/.gitkeep
+eval/cache/
+data/processed/segments.jsonl
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

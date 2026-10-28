@@ -1,0 +1,272 @@
+# Hand-labeled edge cases, judged against policy_v1 definitions (not CUAD's).
+#
+# Each case is a single clause. rule_ids lists every rule the clause matches;
+# an empty list means it matches none (a "hard negative").
+#
+# Splits are fixed: 2 dev + 2 test per rule. Never tune prompts on the test cases.
+# None of these duplicate the examples in the policy file, since those go into prompts.
+
+cases:
+  # R-01 Limitation of liability required
+  - id: E01
+    split: dev
+    rule_ids: [R-01]
+    text: "THE TOTAL CUMULATIVE LIABILITY OF EACH PARTY SHALL NOT EXCEED THE AMOUNTS ACTUALLY PAID BY CUSTOMER HEREUNDER."
+    rationale: Monetary cap phrased without the words "limitation of liability".
+  - id: E02
+    split: test
+    rule_ids: []
+    text: "EXCEPT AS EXPRESSLY PROVIDED HEREIN, THE PRODUCTS ARE PROVIDED 'AS IS' AND SUPPLIER DISCLAIMS ALL IMPLIED WARRANTIES, INCLUDING MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE."
+    rationale: Warranty disclaimer only; limits no damages.
+  - id: E03
+    split: dev
+    rule_ids: []
+    text: "Supplier shall maintain product liability insurance with limits of not less than $5,000,000 per occurrence."
+    rationale: An insurance amount is not a cap on liability.
+  - id: E04
+    split: test
+    rule_ids: [R-01]
+    text: "In no event shall Distributor be entitled to recover lost profits or other consequential damages from Company."
+    rationale: A one-sided exclusion of consequential damages still limits liability.
+
+  # R-02 Uncapped liability prohibited
+  - id: E05
+    split: dev
+    rule_ids: [R-02]
+    text: "The limitations in this Section 12 do not apply to damages arising from a party's gross negligence or willful misconduct."
+    rationale: A carve-out from the cap makes that liability uncapped.
+  - id: E06
+    split: test
+    rule_ids: [R-01, R-02]
+    text: "THE EXCLUSIONS AND LIMITATIONS IN THIS ARTICLE SHALL NOT APPLY TO CLAIMS FOR INDEMNIFICATION UNDER ARTICLE 9 OR TO BREACHES OF ARTICLE 7 (CONFIDENTIALITY); SUBJECT TO THE FOREGOING, EACH PARTY'S LIABILITY IS LIMITED TO THE FEES PAID."
+    rationale: Contains both a cap (R-01) and carve-outs (R-02).
+  - id: E07
+    split: dev
+    rule_ids: [R-01]
+    text: "Each party's liability for breach of this Agreement shall be limited to direct damages not exceeding $250,000."
+    rationale: Plain cap with no carve-outs; not R-02.
+  - id: E08
+    split: test
+    rule_ids: [R-02]
+    text: "Distributor shall be liable for all losses of any kind resulting from its breach of this Agreement, without limitation."
+    rationale: Explicitly unlimited liability.
+
+  # R-03 Governing law required
+  - id: E09
+    split: dev
+    rule_ids: []
+    text: "Any dispute arising under this Agreement shall be finally settled by arbitration in Singapore under the SIAC Rules."
+    rationale: The seat of arbitration is not a choice of law.
+  - id: E10
+    split: test
+    rule_ids: [R-03]
+    text: "The validity, interpretation and performance of this Agreement shall be determined under the laws of the Province of Ontario, without regard to its conflict of laws principles."
+    rationale: Choice of law phrased without "governed by".
+  - id: E11
+    split: dev
+    rule_ids: [R-03]
+    text: "This Agreement shall be interpreted under New York law, and the parties consent to the jurisdiction of courts located in Manhattan."
+    rationale: Choice of law plus forum; matches because it names the law.
+  - id: E12
+    split: test
+    rule_ids: []
+    text: "Each party shall comply with the Foreign Corrupt Practices Act and all other applicable anti-bribery laws."
+    rationale: A legal compliance duty, not a choice of governing law.
+
+  # R-04 Termination for convenience
+  - id: E13
+    split: dev
+    rule_ids: [R-04]
+    text: "Customer may cancel any Statement of Work, in whole or in part, at its discretion upon fifteen (15) days' written notice."
+    rationale: Discretionary cancellation is termination for convenience, even without the word "terminate".
+  - id: E14
+    split: test
+    rule_ids: []
+    text: "Either party may terminate this Agreement immediately if the other party becomes insolvent or makes an assignment for the benefit of creditors."
+    rationale: Insolvency is a cause.
+  - id: E15
+    split: dev
+    rule_ids: []
+    text: "Company may terminate this Agreement upon thirty days' notice if Distributor fails to meet the Minimum Purchase Requirement in any calendar year."
+    rationale: Termination for failing a performance target is for cause, despite the notice period.
+  - id: E16
+    split: test
+    rule_ids: [R-04]
+    text: "Notwithstanding anything to the contrary, Licensee may terminate this Agreement at will by providing Licensor with sixty (60) days' prior written notice."
+    rationale: '"At will" means without cause.'
+
+  # R-05 Renewal terms
+  - id: E17
+    split: dev
+    rule_ids: [R-05]
+    text: "Unless terminated earlier, the term of this Agreement shall be extended automatically for additional twelve-month periods."
+    rationale: Automatic extension phrased without "renew".
+  - id: E18
+    split: test
+    rule_ids: []
+    text: "The initial term of this Agreement is five (5) years from the Effective Date."
+    rationale: Initial term only.
+  - id: E19
+    split: dev
+    rule_ids: [R-05]
+    text: "The parties may, by mutual written agreement executed before expiry, renew this Agreement on terms to be negotiated."
+    rationale: A renewal option, even one that needs mutual agreement, matches per the definition.
+  - id: E20
+    split: test
+    rule_ids: [R-05]
+    text: "To prevent renewal, a party must deliver written notice of non-renewal no later than ninety (90) days before the end of the then-current term."
+    rationale: Sets the notice period for preventing renewal.
+
+  # R-06 Non-compete and non-solicitation of customers
+  - id: E21
+    split: dev
+    rule_ids: [R-06]
+    text: "For eighteen months following the termination of this Agreement, Consultant shall not provide services to any business that competes with the Company in North America."
+    rationale: Post-term non-compete.
+  - id: E22
+    split: test
+    rule_ids: []
+    text: "Neither party shall, during the term of this Agreement, directly or indirectly recruit or hire any employee of the other party."
+    rationale: Employee non-solicitation is out of scope for R-06.
+  - id: E23
+    split: dev
+    rule_ids: []
+    text: "Nothing in this Agreement shall prevent either party from developing or marketing products that compete with the other party's products."
+    rationale: Expressly permits competition; uses the vocabulary but has no restriction.
+  - id: E24
+    split: test
+    rule_ids: [R-06]
+    text: "Reseller shall not, during the Term and for one year thereafter, solicit or accept orders for the Products from any customer introduced to it by Manufacturer, except through Manufacturer."
+    rationale: Customer non-solicitation.
+
+  # R-07 Exclusivity
+  - id: E25
+    split: dev
+    rule_ids: [R-07]
+    text: "Licensor shall not grant any other person a license to distribute the Software in Brazil during the Term."
+    rationale: Exclusivity expressed as a negative covenant, without the word "exclusive".
+  - id: E26
+    split: test
+    rule_ids: []
+    text: "The courts of Delaware shall have exclusive jurisdiction over any dispute arising out of this Agreement."
+    rationale: '"Exclusive jurisdiction" is not exclusivity, and a forum alone is not governing law (R-03).'
+  - id: E27
+    split: dev
+    rule_ids: []
+    text: "Distributor's appointment hereunder is non-exclusive, and Company reserves the right to appoint other distributors in the Territory."
+    rationale: Explicitly non-exclusive.
+  - id: E28
+    split: test
+    rule_ids: [R-07]
+    text: "Company grants Partner the sole right to market the Services to hospitals in the State of Texas."
+    rationale: '"Sole right" is exclusivity.'
+
+  # R-08 Assignment and change-of-control restrictions
+  - id: E29
+    split: dev
+    rule_ids: [R-08]
+    text: "Distributor may not delegate any of its obligations under this Agreement to a subcontractor without Company's prior written approval."
+    rationale: Restricting delegation is a consent-based transfer restriction.
+  - id: E30
+    split: test
+    rule_ids: []
+    text: "Either party may assign this Agreement, without consent, to any successor in a merger or sale of all or substantially all of its assets."
+    rationale: Freely permits assignment and grants no change-of-control right. CUAD may label this as Anti-Assignment; the policy does not.
+  - id: E31
+    split: dev
+    rule_ids: [R-08]
+    text: "If Licensee is acquired by a competitor of Licensor, Licensor may terminate this Agreement upon written notice."
+    rationale: A change-of-control trigger; termination tied to an event is not convenience (R-04).
+  - id: E32
+    split: test
+    rule_ids: [R-08]
+    text: "Any attempted assignment in violation of this Section shall be null and void."
+    rationale: Enforces an assignment restriction.
+
+  # R-09 Transfer of IP ownership
+  - id: E33
+    split: dev
+    rule_ids: []
+    text: "Licensee grants to Licensor a perpetual, royalty-free license to any improvements made by Licensee to the Licensed Technology."
+    rationale: A grant-back license, not ownership.
+  - id: E34
+    split: test
+    rule_ids: [R-09]
+    text: "Consultant agrees that all deliverables shall be deemed 'works made for hire' and that Client shall own all copyrights therein."
+    rationale: Work-for-hire transfers ownership.
+  - id: E35
+    split: dev
+    rule_ids: [R-09]
+    text: "Any patent arising from the collaboration shall be filed in both parties' names and owned by them in equal undivided shares."
+    rationale: Joint ownership.
+  - id: E36
+    split: test
+    rule_ids: []
+    text: "Nothing in this Agreement transfers ownership of any intellectual property; all rights not expressly granted are reserved by Licensor."
+    rationale: Expressly denies any transfer.
+
+  # R-10 Most favored nation pricing
+  - id: E37
+    split: dev
+    rule_ids: [R-10]
+    text: "Should Vendor grant more favorable pricing or payment terms to any similarly situated customer, Vendor shall promptly extend such terms to Purchaser."
+    rationale: Classic MFN wording.
+  - id: E38
+    split: test
+    rule_ids: [R-10]
+    text: "Supplier represents that the prices charged to Buyer are no higher than those charged to any other customer for comparable quantities."
+    rationale: MFN phrased as a representation.
+  - id: E39
+    split: dev
+    rule_ids: []
+    text: "The price for each Product is set forth in Schedule A and shall remain fixed for the first contract year."
+    rationale: Fixed pricing, with no comparison to third parties.
+  - id: E40
+    split: test
+    rule_ids: []
+    text: "Distributor shall receive a 10% discount off Company's then-current list price."
+    rationale: A discount, with no comparison to third parties.
+
+  # R-11 Liquidated damages and penalties
+  - id: E41
+    split: dev
+    rule_ids: [R-11]
+    text: "If the Plant is not operational by the Target Date, Contractor shall pay Owner $25,000 for each week of delay, which the parties agree is a reasonable estimate of Owner's damages and not a penalty."
+    rationale: Liquidated damages, despite saying "not a penalty".
+  - id: E42
+    split: test
+    rule_ids: []
+    text: "Customer shall pay interest on overdue amounts at the lesser of 1% per month or the maximum rate permitted by law."
+    rationale: Late-payment interest is excluded by the definition.
+  - id: E43
+    split: test
+    rule_ids: [R-11]
+    text: "Upon any breach of the exclusivity covenant in Section 4, Distributor shall pay Company a fixed sum of $50,000 per occurrence."
+    rationale: A fixed sum on breach. It mentions exclusivity but grants none, so not R-07.
+  - id: E44
+    split: dev
+    rule_ids: []
+    text: "The breaching party shall reimburse the non-breaching party for its reasonable attorneys' fees incurred in enforcing this Agreement."
+    rationale: Fee-shifting is not a predetermined sum.
+
+  # R-12 Audit rights
+  - id: E45
+    split: test
+    rule_ids: [R-12]
+    text: "Upon reasonable notice, Company or its independent accountant may examine Distributor's books and records relating to sales of the Products."
+    rationale: An audit right phrased as "examine".
+  - id: E46
+    split: dev
+    rule_ids: []
+    text: "Licensee shall maintain complete and accurate records of all Net Sales for at least three years after the year to which they relate."
+    rationale: Record-keeping only, with no inspection right.
+  - id: E47
+    split: dev
+    rule_ids: [R-12]
+    text: "Supplier shall provide Buyer's quality personnel with access to the manufacturing site to observe production of the Products."
+    rationale: A facility inspection right.
+  - id: E48
+    split: test
+    rule_ids: []
+    text: "Each party shall provide the other with quarterly written reports summarizing its marketing activities."
+    rationale: Reporting is not an audit right.

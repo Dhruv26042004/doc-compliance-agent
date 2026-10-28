@@ -1,0 +1,236 @@
+# Contract Review Policy, version 1
+#
+# Perspective: an in-house legal team reviewing third-party commercial contracts
+# (vendor, distribution, licensing, services) before signature.
+#
+# Rule kinds
+#   required   - the contract MUST contain a clause of this kind. Matching clauses
+#                are evidence of compliance; if no clause matches, the DOCUMENT violates.
+#   prohibited - any clause of this kind is a VIOLATION and blocks auto-approval.
+#   review     - any clause of this kind is FLAGGED for a lawyer; not a violation by
+#                itself, but it must be surfaced with its exact text.
+#
+# Every rule is testable: given one clause, a reviewer can answer "does this clause
+# match the rule?" with yes/no using only the definition and examples below.
+#
+# cuad_categories maps each rule to CUAD v1 labels. Those labels generate ground
+# truth automatically; hand-labeled edge cases cover what CUAD cannot.
+
+policy_id: contract-review
+version: 1
+effective_date: 2026-10-28
+
+rules:
+  - id: R-01
+    title: Limitation of liability required
+    kind: required
+    severity: high
+    definition: >
+      The contract must contain a clause that limits the amount or type of damages
+      a party can recover, for example a monetary cap (fees paid, a fixed sum) or an
+      exclusion of indirect, consequential, incidental, or punitive damages.
+    matches:
+      - "In no event shall either party's aggregate liability exceed the fees paid in the twelve months preceding the claim."
+      - "Neither party shall be liable for any indirect, incidental, special, or consequential damages, including lost profits."
+      - "Supplier's total liability under this Agreement is limited to $500,000."
+    does_not_match:
+      - "Each party shall indemnify the other against third-party claims arising from its negligence."  # indemnity, not a cap
+      - "The Customer shall pay all invoices within 30 days."
+    edge_notes: >
+      A clause that both caps liability AND carves out exceptions matches R-01 and
+      also R-02. A warranty disclaimer ("AS IS") without any damages limit does not match.
+    cuad_categories: [Cap On Liability]
+
+  - id: R-02
+    title: Uncapped liability prohibited
+    kind: prohibited
+    severity: high
+    definition: >
+      A clause is a violation if it makes any liability unlimited: it states that
+      liability is not capped, or it excludes certain claims (e.g. breach of
+      confidentiality, IP infringement, indemnification, gross negligence) from an
+      otherwise applicable liability cap.
+    matches:
+      - "The foregoing limitations shall not apply to a party's indemnification obligations or breach of Section 8 (Confidentiality)."
+      - "Nothing in this Agreement limits Licensee's liability for infringement of Licensor's intellectual property."
+    does_not_match:
+      - "In no event shall either party's liability exceed $1,000,000."  # a plain cap (R-01 only)
+      - "Neither party excludes liability for death or personal injury caused by its negligence to the extent such exclusion is prohibited by law."  # statutory boilerplate; see edge_notes
+    edge_notes: >
+      CUAD annotators labeled most carve-outs as uncapped liability, including some
+      statutory boilerplate. The ground truth follows CUAD; hand-labeled edge cases
+      document the disagreement.
+    cuad_categories: [Uncapped Liability]
+
+  - id: R-03
+    title: Governing law required
+    kind: required
+    severity: medium
+    definition: >
+      The contract must state which jurisdiction's law governs it.
+    matches:
+      - "This Agreement shall be governed by and construed in accordance with the laws of the State of Delaware."
+      - "This Agreement is subject to the laws of England and Wales."
+    does_not_match:
+      - "The parties submit to the exclusive jurisdiction of the courts of New York County."  # venue/forum only, no choice of law
+      - "Each party shall comply with all applicable laws and regulations."
+    edge_notes: >
+      Forum selection and arbitration clauses do not match unless they also name the
+      governing law.
+    cuad_categories: [Governing Law]
+
+  - id: R-04
+    title: Termination for convenience
+    kind: review
+    severity: high
+    definition: >
+      Flag any clause that lets a party terminate the contract without cause,
+      i.e. for convenience or for any reason, usually on notice.
+    matches:
+      - "Either party may terminate this Agreement for any reason upon ninety (90) days' written notice."
+      - "Company may terminate this Agreement at any time, with or without cause, effective immediately upon notice."
+    does_not_match:
+      - "Either party may terminate this Agreement if the other party materially breaches and fails to cure within 30 days."  # for cause
+      - "This Agreement may be terminated by mutual written agreement of the parties."
+    edge_notes: >
+      Termination on insolvency, breach, or change of control is for cause and does not match.
+    cuad_categories: [Termination For Convenience]
+
+  - id: R-05
+    title: Renewal terms
+    kind: review
+    severity: medium
+    definition: >
+      Flag any clause that renews or extends the contract term (automatically or by
+      option) or sets the notice period for preventing a renewal.
+    matches:
+      - "This Agreement shall automatically renew for successive one-year terms unless either party gives notice of non-renewal at least 60 days before expiry."
+      - "Distributor may extend the Term for one additional period of three years."
+    does_not_match:
+      - "This Agreement shall commence on the Effective Date and continue for three (3) years."  # initial term only
+      - "Upon expiration, Distributor shall return all marketing materials."
+    edge_notes: >
+      A clause stating only the initial term does not match. A clause that both sets the
+      initial term and auto-renews it matches.
+    cuad_categories: [Renewal Term, Notice Period To Terminate Renewal]
+
+  - id: R-06
+    title: Non-compete and non-solicitation of customers
+    kind: prohibited
+    severity: high
+    definition: >
+      A clause is a violation if it restricts a party from competing, operating in a
+      market or territory, or soliciting the other party's customers, during or after
+      the term.
+    matches:
+      - "During the Term and for two years thereafter, Distributor shall not sell any product that competes with the Products."
+      - "Neither party shall solicit any customer of the other party for a period of 12 months after termination."
+    does_not_match:
+      - "Neither party shall solicit for employment any employee of the other party."  # employee non-solicit, different category
+      - "Distributor shall use commercially reasonable efforts to promote the Products."
+    edge_notes: >
+      Employee non-solicitation is out of scope for this rule.
+    cuad_categories: [Non-Compete, No-Solicit Of Customers]
+
+  - id: R-07
+    title: Exclusivity
+    kind: review
+    severity: medium
+    definition: >
+      Flag any clause that grants exclusive rights or requires a party to deal only
+      with the other party (exclusive supplier, distributor, territory, or license).
+    matches:
+      - "Company hereby appoints Distributor as its exclusive distributor of the Products in the Territory."
+      - "Customer shall purchase all of its requirements for the Products solely from Supplier."
+    does_not_match:
+      - "Company appoints Distributor as a non-exclusive distributor in the Territory."
+      - "Licensor grants Licensee a non-exclusive, worldwide license to use the Software."
+    edge_notes: >
+      The word "exclusive" in "exclusive jurisdiction" or "exclusive remedy" does not match.
+    cuad_categories: [Exclusivity]
+
+  - id: R-08
+    title: Assignment and change-of-control restrictions
+    kind: review
+    severity: medium
+    definition: >
+      Flag any clause that restricts assigning or transferring the contract (e.g. requires
+      consent), or gives rights to a party when the other undergoes a change of control,
+      merger, or acquisition.
+    matches:
+      - "Neither party may assign this Agreement without the prior written consent of the other party."
+      - "Company may terminate this Agreement upon a Change of Control of Distributor."
+    does_not_match:
+      - "This Agreement shall be binding upon and inure to the benefit of the parties and their permitted successors."  # boilerplate, no restriction stated
+      - "Distributor shall notify Company of any change in its business address."
+    edge_notes: >
+      A clause that freely permits assignment with no condition does not match.
+    cuad_categories: [Anti-Assignment, Change Of Control]
+
+  - id: R-09
+    title: Transfer of IP ownership
+    kind: prohibited
+    severity: high
+    definition: >
+      A clause is a violation if it assigns or transfers ownership of intellectual property
+      to the counterparty, or makes IP jointly owned.
+    matches:
+      - "All work product, inventions, and deliverables created under this Agreement shall be the sole property of Company, and Contractor hereby assigns all rights therein."
+      - "Improvements developed jointly by the parties shall be jointly owned."
+    does_not_match:
+      - "Licensor grants Licensee a non-exclusive license to use the Licensed Marks."  # license, not ownership
+      - "Each party retains all right, title, and interest in its pre-existing intellectual property."
+    edge_notes: >
+      A license (even exclusive or perpetual) is not an ownership transfer.
+      Ground truth cannot tell which direction the IP moves; any ownership transfer matches.
+    cuad_categories: [Ip Ownership Assignment, Joint Ip Ownership]
+
+  - id: R-10
+    title: Most favored nation pricing
+    kind: review
+    severity: low
+    definition: >
+      Flag any clause requiring a party to give the other terms (usually price) at least
+      as favorable as those it gives any third party.
+    matches:
+      - "If Supplier offers any customer a lower price for the Products, Supplier shall offer the same price to Buyer."
+    does_not_match:
+      - "Prices may be adjusted annually by no more than 3%."
+      - "Supplier shall offer Buyer volume discounts as set out in Exhibit B."
+    edge_notes: >
+      Rare in the dataset (fewer than 40 contracts). Expect wide confidence intervals on this rule.
+    cuad_categories: [Most Favored Nation]
+
+  - id: R-11
+    title: Liquidated damages and penalties
+    kind: review
+    severity: medium
+    definition: >
+      Flag any clause fixing a predetermined sum, penalty, or termination fee payable
+      upon breach or early termination.
+    matches:
+      - "If Contractor fails to deliver by the Delivery Date, Contractor shall pay $1,000 per day of delay as liquidated damages."
+      - "Upon early termination by Customer, Customer shall pay a termination fee equal to six months of fees."
+    does_not_match:
+      - "Late payments shall accrue interest at 1.5% per month."  # interest on late payment
+      - "Customer shall reimburse Supplier for reasonable out-of-pocket expenses."
+    edge_notes: >
+      Late-payment interest is not liquidated damages.
+    cuad_categories: [Liquidated Damages]
+
+  - id: R-12
+    title: Audit rights
+    kind: review
+    severity: low
+    definition: >
+      Flag any clause giving a party the right to inspect or audit the other's books,
+      records, facilities, or compliance.
+    matches:
+      - "Licensor may, upon 30 days' notice, audit Licensee's records to verify royalty payments."
+      - "Supplier shall permit Company to inspect its manufacturing facilities during normal business hours."
+    does_not_match:
+      - "Licensee shall keep accurate records of all sales."  # record-keeping only, no audit right
+      - "Each party shall be responsible for its own taxes."
+    edge_notes: >
+      Record-keeping duties alone do not match; there must be a right to inspect or audit.
+    cuad_categories: [Audit Rights]
