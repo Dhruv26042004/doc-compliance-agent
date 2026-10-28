@@ -22,8 +22,10 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://compliance:compliance@db:5432/compliance
       DATA_DIR: /data
+      STORAGE_DIR: /storage
     volumes:
       - ./data:/data:ro
+      - uploads:/storage
     ports:
       - "8000:8000"
     depends_on:
@@ -42,3 +44,4 @@ services:
 
 volumes:
   pgdata:
+  uploads:

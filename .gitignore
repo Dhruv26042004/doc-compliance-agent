@@ -17,6 +17,7 @@ data/raw/*
 !data/raw/.gitkeep
 eval/cache/
 data/processed/segments.jsonl
+storage/
 
 # OS / editor
 .DS_Store

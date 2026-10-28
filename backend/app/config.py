@@ -12,9 +12,13 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://compliance:compliance@localhost:5432/compliance"
     cors_origins: list[str] = ["http://localhost:3000"]
     data_dir: Path = REPO_ROOT / "data"
+    storage_dir: Path = REPO_ROOT / "storage"  # uploaded and converted files
+    max_upload_mb: int = 20
 
-    # LLM provider settings are read now but only used from Phase 3 onward.
     llm_provider: str = "gemini"
+    llm_model: str = "gemini-3.5-flash-lite"  # free tier: gemini-3.5-flash allows only 20 requests/day
+    llm_cache_dir: Path = REPO_ROOT / "eval" / "cache"  # responses keyed by request hash
+    llm_max_workers: int = 4
     gemini_api_key: str = ""
     groq_api_key: str = ""
     ollama_base_url: str = "http://localhost:11434"

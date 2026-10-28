@@ -1,0 +1,362 @@
+{
+ "meta": {
+  "split": "edge_dev",
+  "run_at": "2026-10-28T16:27:26Z",
+  "model": "gemini-3.5-flash",
+  "model_version": "gemini-3.6-flash",
+  "prompt_version": "v1",
+  "prompt_hash": "ab89510678a8",
+  "policy_version": 1,
+  "n_documents": 1,
+  "n_clauses": 24,
+  "n_findings": 13,
+  "quote_found_rate": 1.0,
+  "failed_documents": [],
+  "cost": {
+   "calls": 2,
+   "cached": 0,
+   "input_tokens": 5403,
+   "output_tokens": 4233,
+   "llm_latency_s": 25.1,
+   "wall_s": 68.4
+  }
+ },
+ "per_rule": {
+  "R-01": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-02": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-03": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-04": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-05": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 1,
+   "precision": 1.0,
+   "recall": 0.5,
+   "f1": 0.6666666666666666
+  },
+  "R-06": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-07": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-08": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 1,
+   "precision": 1.0,
+   "recall": 0.5,
+   "f1": 0.6666666666666666
+  },
+  "R-09": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-10": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-11": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-12": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  }
+ },
+ "micro": {
+  "tp": 13,
+  "fp": 0,
+  "fn": 2,
+  "precision": 1.0,
+  "recall": 0.8666666666666667,
+  "f1": 0.9285714285714286
+ },
+ "doc_level": {
+  "R-01": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "precision": null,
+   "recall": null,
+   "f1": null,
+   "tn": 0
+  },
+  "R-03": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "precision": null,
+   "recall": null,
+   "f1": null,
+   "tn": 0
+  }
+ },
+ "predictions": {
+  "E01": [
+   {
+    "rule_id": "R-01",
+    "quote": "THE TOTAL CUMULATIVE LIABILITY OF EACH PARTY SHALL NOT EXCEED THE AMOUNTS ACTUALLY PAID BY CUSTOMER HEREUNDER.",
+    "explanation": "The clause caps total aggregate liability of each party to amounts paid under the agreement.",
+    "confidence": 1.0,
+    "quote_start": 0,
+    "quote_end": 109,
+    "quote_found": true
+   }
+  ],
+  "E03": [],
+  "E05": [
+   {
+    "rule_id": "R-02",
+    "quote": "The limitations in this Section 12 do not apply to damages arising from a party's gross negligence or willful misconduct.",
+    "explanation": "The clause excludes gross negligence and willful misconduct from liability limitations, creating uncapped liability for those claims.",
+    "confidence": 0.95,
+    "quote_start": 0,
+    "quote_end": 120,
+    "quote_found": true
+   }
+  ],
+  "E07": [
+   {
+    "rule_id": "R-01",
+    "quote": "Each party's liability for breach of this Agreement shall be limited to direct damages not exceeding $250,000.",
+    "explanation": "The clause caps liability to direct damages with a monetary limit of $250,000.",
+    "confidence": 1.0,
+    "quote_start": 0,
+    "quote_end": 109,
+    "quote_found": true
+   }
+  ],
+  "E09": [],
+  "E11": [
+   {
+    "rule_id": "R-03",
+    "quote": "This Agreement shall be interpreted under New York law",
+    "explanation": "The clause specifies that New York law governs the agreement.",
+    "confidence": 1.0,
+    "quote_start": 0,
+    "quote_end": 54,
+    "quote_found": true
+   }
+  ],
+  "E13": [
+   {
+    "rule_id": "R-04",
+    "quote": "Customer may cancel any Statement of Work, in whole or in part, at its discretion upon fifteen (15) days' written notice.",
+    "explanation": "The clause allows Customer to terminate/cancel a Statement of Work at its discretion upon notice.",
+    "confidence": 1.0,
+    "quote_start": 0,
+    "quote_end": 120,
+    "quote_found": true
+   }
+  ],
+  "E15": [],
+  "E17": [
+   {
+    "rule_id": "R-05",
+    "quote": "the term of this Agreement shall be extended automatically for additional twelve-month periods.",
+    "explanation": "The clause provides for the automatic renewal/extension of the agreement term.",
+    "confidence": 1.0,
+    "quote_start": 27,
+    "quote_end": 121,
+    "quote_found": true
+   }
+  ],
+  "E19": [],
+  "E21": [
+   {
+    "rule_id": "R-06",
+    "quote": "Consultant shall not provide services to any business that competes with the Company in North America.",
+    "explanation": "The clause restricts Consultant from competing with the Company post-termination.",
+    "confidence": 1.0,
+    "quote_start": 65,
+    "quote_end": 166,
+    "quote_found": true
+   }
+  ],
+  "E23": [],
+  "E25": [
+   {
+    "rule_id": "R-07",
+    "quote": "Licensor shall not grant any other person a license to distribute the Software in Brazil during the Term.",
+    "explanation": "The clause grants exclusive distribution rights by prohibiting Licensor from licensing the Software to others in the territory.",
+    "confidence": 0.95,
+    "quote_start": 0,
+    "quote_end": 104,
+    "quote_found": true
+   }
+  ],
+  "E27": [],
+  "E29": [],
+  "E31": [
+   {
+    "rule_id": "R-08",
+    "quote": "If Licensee is acquired by a competitor of Licensor, Licensor may terminate this Agreement upon written notice.",
+    "explanation": "The clause grants termination rights upon an acquisition/change of control of Licensee.",
+    "confidence": 0.95,
+    "quote_start": 0,
+    "quote_end": 110,
+    "quote_found": true
+   }
+  ],
+  "E33": [],
+  "E35": [
+   {
+    "rule_id": "R-09",
+    "quote": "Any patent arising from the collaboration shall be filed in both parties' names and owned by them in equal undivided shares.",
+    "explanation": "The clause mandates joint ownership of patents arising from the collaboration.",
+    "confidence": 0.95,
+    "quote_start": 0,
+    "quote_end": 123,
+    "quote_found": true
+   }
+  ],
+  "E37": [
+   {
+    "rule_id": "R-10",
+    "quote": "Should Vendor grant more favorable pricing or payment terms to any similarly situated customer, Vendor shall promptly extend such terms to Purchaser.",
+    "explanation": "The clause requires Vendor to provide Purchaser with pricing terms at least as favorable as those offered to other customers.",
+    "confidence": 1.0,
+    "quote_start": 0,
+    "quote_end": 148,
+    "quote_found": true
+   }
+  ],
+  "E39": [],
+  "E41": [
+   {
+    "rule_id": "R-11",
+    "quote": "Contractor shall pay Owner $25,000 for each week of delay, which the parties agree is a reasonable estimate of Owner's damages and not a penalty.",
+    "explanation": "This clause specifies a predetermined liquidated damages amount per week of delay upon failure to meet the target date.",
+    "confidence": 0.98,
+    "quote_start": 52,
+    "quote_end": 196,
+    "quote_found": true
+   }
+  ],
+  "E44": [],
+  "E46": [],
+  "E47": [
+   {
+    "rule_id": "R-12",
+    "quote": "Supplier shall provide Buyer's quality personnel with access to the manufacturing site to observe production of the Products.",
+    "explanation": "This clause grants the buyer's personnel the right to inspect and monitor the supplier's manufacturing facilities and production process.",
+    "confidence": 0.95,
+    "quote_start": 0,
+    "quote_end": 124,
+    "quote_found": true
+   }
+  ]
+ },
+ "gold": {
+  "E01": [
+   "R-01"
+  ],
+  "E03": [],
+  "E05": [
+   "R-02"
+  ],
+  "E07": [
+   "R-01"
+  ],
+  "E09": [],
+  "E11": [
+   "R-03"
+  ],
+  "E13": [
+   "R-04"
+  ],
+  "E15": [],
+  "E17": [
+   "R-05"
+  ],
+  "E19": [
+   "R-05"
+  ],
+  "E21": [
+   "R-06"
+  ],
+  "E23": [],
+  "E25": [
+   "R-07"
+  ],
+  "E27": [],
+  "E29": [
+   "R-08"
+  ],
+  "E31": [
+   "R-08"
+  ],
+  "E33": [],
+  "E35": [
+   "R-09"
+  ],
+  "E37": [
+   "R-10"
+  ],
+  "E39": [],
+  "E41": [
+   "R-11"
+  ],
+  "E44": [],
+  "E46": [],
+  "E47": [
+   "R-12"
+  ]
+ }
+}
