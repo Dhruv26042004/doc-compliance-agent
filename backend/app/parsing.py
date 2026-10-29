@@ -74,16 +74,16 @@ def detect_type(data: bytes) -> str:
     raise ParseError("Unsupported file: only PDF and DOCX are accepted.")
 
 
-def parse_document(data: bytes) -> ParsedDocument:
+def parse_document(data: bytes, convert_docx: bool = True) -> ParsedDocument:
     kind = detect_type(data)
     if kind == "pdf":
         return parse_pdf(data)
-    pdf = convert_docx_to_pdf(data)
+    pdf = convert_docx_to_pdf(data) if convert_docx else None
     if pdf is not None:
         return parse_pdf(pdf)
     parsed = parse_docx_text(data)
     parsed.warnings.append(
-        "LibreOffice is not available, so this DOCX was read without page layout; "
+        "This DOCX was read without page layout (LibreOffice is unavailable or disabled); "
         "highlights will be shown on text only."
     )
     return parsed

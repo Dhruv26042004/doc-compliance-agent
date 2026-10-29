@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, LargeBinary, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -148,3 +148,14 @@ class Batch(Base):
     analyze: Mapped[bool]
     # [{filename, document_id, analysis_id, status: uploaded|failed|analyzed|analysis_failed, error}]
     items: Mapped[list] = mapped_column(JSON, default=list)
+
+
+class StoredFile(Base):
+    """File bytes kept in Postgres, for hosts whose local disk is wiped on restart."""
+
+    __tablename__ = "stored_files"
+
+    document_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(16), primary_key=True)  # original | pdf
+    content_type: Mapped[str] = mapped_column(String(100))
+    content: Mapped[bytes] = mapped_column(LargeBinary)

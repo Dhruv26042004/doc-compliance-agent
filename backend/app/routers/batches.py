@@ -14,6 +14,7 @@ from app.parsing import ParseError
 from app.pipeline import PipelineConfig
 from app.policy import load_policy
 from app.routers.documents import get_llm_client, get_storage_dir
+from app.security import require_admin
 
 router = APIRouter(prefix="/batches", tags=["batches"])
 MAX_FILES = 50
@@ -50,7 +51,7 @@ def run_batch(batch_id: uuid.UUID, client, cfg: PipelineConfig) -> None:
         session.commit()
 
 
-@router.post("", status_code=status.HTTP_202_ACCEPTED)
+@router.post("", status_code=status.HTTP_202_ACCEPTED, dependencies=[Depends(require_admin)])
 def create_batch(
     request: Request,
     files: list[UploadFile],

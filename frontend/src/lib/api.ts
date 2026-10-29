@@ -99,7 +99,15 @@ export type Rule = {
 export type Policy = { policy_id: string; version: number; rules: Rule[] };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const resp = await fetch(`${API_URL}${path}`, { cache: "no-store", ...init });
+  let resp: Response;
+  try {
+    resp = await fetch(`${API_URL}${path}`, { cache: "no-store", ...init });
+  } catch {
+    throw new ApiError(
+      0,
+      "Can't reach the API. On free hosting it sleeps when idle and takes about a minute to wake up; reload the page shortly.",
+    );
+  }
   if (!resp.ok) {
     let detail = resp.statusText;
     try {

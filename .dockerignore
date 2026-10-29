@@ -1,0 +1,13 @@
+# Build context for backend/Dockerfile is the repository root; keep it small.
+.git
+.env
+.cache
+frontend
+storage
+backend/.venv
+**/__pycache__
+**/.pytest_cache
+data/raw
+data/processed/segments.jsonl
+data/processed/examples_parts_*
+eval/cache

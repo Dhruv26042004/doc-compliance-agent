@@ -17,7 +17,11 @@ services:
       retries: 10
 
   api:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        WITH_LIBREOFFICE: "true"  # full local build: Word files get page layout
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://compliance:compliance@db:5432/compliance

@@ -40,12 +40,12 @@ flowchart LR
 | Layer | Tech |
 |---|---|
 | API | Python 3.12, FastAPI, SQLAlchemy, Alembic |
-| Database | PostgreSQL 16 + pgvector |
+| Database | PostgreSQL 16 (Neon in deployment); example retrieval runs in memory with NumPy |
 | Documents | PyMuPDF, LibreOffice (DOCX → PDF), python-docx |
 | LLM | Gemini 3.5 Flash-Lite (free tier), schema-constrained JSON |
 | Small models | scikit-learn (prefilter), bge-small-en via ONNX (example retrieval) |
 | Frontend | Next.js 15, TypeScript, Tailwind CSS, react-pdf, Recharts |
-| Packaging | Docker Compose |
+| Packaging | Docker Compose; Render + Neon + Vercel free tiers ([DEPLOY.md](DEPLOY.md)); GitHub Actions CI |
 
 ## Quickstart
 
@@ -63,6 +63,7 @@ cd backend && uv run python -m scripts.seed_demo --reset    # demo contracts + s
 - API docs: http://localhost:8000/docs
 - Batch upload a folder: `uv run python -m scripts.batch_upload <folder>`
 - Screen-recording script: [DEMO.md](DEMO.md)
+- Free public deployment (Render + Neon + Vercel): [DEPLOY.md](DEPLOY.md)
 
 ### Development without Docker
 
@@ -70,7 +71,7 @@ cd backend && uv run python -m scripts.seed_demo --reset    # demo contracts + s
 docker compose up -d db
 cd backend && uv sync && uv run python -m scripts.bootstrap
 uv run uvicorn app.main:app --reload       # API on :8000
-uv run pytest                              # 41 tests; needs the db container
+uv run pytest                              # 44 tests; needs the db container
 cd ../frontend && npm install && npm run dev
 ```
 
@@ -245,12 +246,13 @@ backend/
   scripts/        bootstrap, dataset build, training, evaluation, comparisons, policy diff,
                   demo seed, batch upload
   alembic/        database migrations (including the append-only audit trigger)
-  tests/          41 tests: parsing, classifier, pipeline, API, review flow, audit, metrics
+  tests/          44 tests: parsing, classifier, pipeline, API, review flow, audit, metrics, security
 frontend/         Next.js reviewer UI: documents, review queue, document review, dashboard
 data/             policy versions, hand-labeled edge cases, frozen splits, data card
 eval/             evaluation method and every saved run (results/)
 LIMITATIONS.md    where the system fails, fairness, and what humans can and cannot catch
 DEMO.md           screen-recording script
+DEPLOY.md         free deployment guide (render.yaml, CI in .github/workflows)
 ```
 
 ## Roadmap
@@ -263,3 +265,7 @@ DEMO.md           screen-recording script
 - [x] **Phase 5:** Confidence routing and the reviewer interface
 - [x] **Phase 6:** Audit log, policy versioning, and a metrics dashboard
 - [x] **Phase 7:** Batch mode, seed data, and the limitations page
+
+## License
+
+MIT for this project's code ([LICENSE](LICENSE)). CUAD data is CC BY 4.0 (The Atticus Project). PyMuPDF is AGPL-3.0, which matters if you build a closed-source product on this code.

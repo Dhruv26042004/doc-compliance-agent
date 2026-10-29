@@ -9,6 +9,7 @@ Usage: uv run python -m scripts.seed_demo [--api http://localhost:8000] [--reset
 """
 
 import argparse
+import os
 import io
 import json
 import random
@@ -68,6 +69,7 @@ def demo_nda() -> bytes:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--api", default="http://localhost:8000")
+    ap.add_argument("--token", default=os.environ.get("ADMIN_TOKEN"), help="X-Admin-Token for a protected deployment")
     ap.add_argument("--reset", action="store_true", help="delete all existing documents first")
     args = ap.parse_args()
     data = get_settings().data_dir
@@ -79,7 +81,7 @@ def main() -> None:
     pdfs = {PurePosixPath(n).stem.strip(): n for n in archive.namelist() if n.lower().endswith(".pdf")}
     cuad = {d["title"]: d["paragraphs"][0] for d in json.loads((data / "raw/cuad/CUADv1.json").read_text(encoding="utf-8"))["data"]}
 
-    with httpx.Client(base_url=args.api, timeout=600) as api:
+    with httpx.Client(base_url=args.api, headers={"X-Admin-Token": args.token} if args.token else {}, timeout=600) as api:
         if args.reset:
             for d in api.get("/documents", params={"limit": 200}).json():
                 api.delete(f"/documents/{d['id']}")

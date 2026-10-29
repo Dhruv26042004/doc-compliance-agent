@@ -3,3 +3,5 @@
 *.docx binary
 *.png binary
 *.ico binary
+*.joblib binary
+*.npz binary

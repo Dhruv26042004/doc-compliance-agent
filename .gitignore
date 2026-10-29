@@ -17,9 +17,7 @@ data/raw/*
 !data/raw/.gitkeep
 eval/cache/
 data/processed/segments.jsonl
-data/processed/*.joblib
-data/processed/*.npz
-data/processed/examples.jsonl
+# prefilter.joblib and examples.* ARE committed: the deployable image needs them.
 data/processed/examples_parts_*/
 storage/
 .cache/

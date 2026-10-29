@@ -4,6 +4,7 @@ Usage: uv run python -m scripts.batch_upload <folder> [--api http://localhost:80
 """
 
 import argparse
+import os
 import time
 from pathlib import Path
 
@@ -14,6 +15,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("folder", type=Path)
     ap.add_argument("--api", default="http://localhost:8000")
+    ap.add_argument("--token", default=os.environ.get("ADMIN_TOKEN"), help="X-Admin-Token for a protected deployment")
     ap.add_argument("--no-analyze", action="store_true")
     args = ap.parse_args()
 
@@ -21,7 +23,7 @@ def main() -> None:
     if not paths:
         raise SystemExit(f"No PDF or DOCX files in {args.folder}")
     files = [("files", (p.name, p.read_bytes())) for p in paths]
-    with httpx.Client(base_url=args.api, timeout=300) as api:
+    with httpx.Client(base_url=args.api, headers={"X-Admin-Token": args.token} if args.token else {}, timeout=300) as api:
         resp = api.post("/batches", params={"analyze": str(not args.no_analyze).lower()}, files=files)
         resp.raise_for_status()
         batch = resp.json()

@@ -2,7 +2,6 @@ import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, status
-from fastapi.responses import FileResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -17,6 +16,7 @@ from app.pipeline import PipelineConfig
 from app.policy import load_policy
 from app.routers.reviews import analysis_out
 from app.schemas import AnalysisOut, DocumentDetail, DocumentSummary
+from app.security import require_admin
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -49,7 +49,7 @@ def _get(session: Session, doc_id: uuid.UUID) -> Document:
     return doc
 
 
-@router.post("", status_code=status.HTTP_201_CREATED, response_model=DocumentDetail)
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=DocumentDetail, dependencies=[Depends(require_admin)])
 def upload_document(
     file: UploadFile,
     response: Response,
@@ -91,15 +91,16 @@ def get_document_file(
     doc_id: uuid.UUID,
     session: Session = Depends(get_session),
     storage_dir: Path = Depends(get_storage_dir),
-) -> FileResponse:
+) -> Response:
     doc = _get(session, doc_id)
-    path = documents.pdf_path(storage_dir, doc.id)
-    if not doc.has_layout or not path.exists():
+    pdf = documents.load_pdf(session, storage_dir, doc.id) if doc.has_layout else None
+    if pdf is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No PDF rendition for this document")
-    return FileResponse(path, media_type="application/pdf", filename=f"{Path(doc.filename).stem}.pdf")
+    name = f"{Path(doc.filename).stem}.pdf".encode("ascii", "ignore").decode() or "document.pdf"
+    return Response(pdf, media_type="application/pdf", headers={"Content-Disposition": f'inline; filename="{name}"'})
 
 
-@router.delete("/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{doc_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_admin)])
 def delete_document(
     doc_id: uuid.UUID,
     session: Session = Depends(get_session),
@@ -108,7 +109,7 @@ def delete_document(
     documents.delete(session, storage_dir, _get(session, doc_id))
 
 
-@router.post("/{doc_id}/analyze", response_model=AnalysisOut)
+@router.post("/{doc_id}/analyze", response_model=AnalysisOut, dependencies=[Depends(require_admin)])
 def analyze(
     doc_id: uuid.UUID,
     session: Session = Depends(get_session),

@@ -8,13 +8,36 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import audit
-from app.models import Clause, Document
+from app.config import get_settings
+from app.models import Clause, Document, StoredFile
 from app.parsing import detect_type, parse_document
 from app.segmenter import split_text
 
 
-def pdf_path(storage_dir: Path, doc_id: uuid.UUID) -> Path:
-    return storage_dir / f"{doc_id}.pdf"
+CONTENT_TYPES = {"pdf": "application/pdf",
+                 "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+
+
+def _use_db() -> bool:
+    return get_settings().file_storage == "database"
+
+
+def save_file(session: Session, storage_dir: Path, doc_id: uuid.UUID, kind: str, ext: str, data: bytes) -> None:
+    """kind is "original" (the upload) or "pdf" (what the viewer shows)."""
+    if _use_db():
+        session.add(StoredFile(document_id=doc_id, kind=kind, content_type=CONTENT_TYPES[ext], content=data))
+    else:
+        storage_dir.mkdir(parents=True, exist_ok=True)
+        name = f"{doc_id}.pdf" if kind == "pdf" else f"{doc_id}.original.{ext}"
+        (storage_dir / name).write_bytes(data)
+
+
+def load_pdf(session: Session, storage_dir: Path, doc_id: uuid.UUID) -> bytes | None:
+    if _use_db():
+        f = session.get(StoredFile, (doc_id, "pdf"))
+        return f.content if f else None
+    path = storage_dir / f"{doc_id}.pdf"
+    return path.read_bytes() if path.exists() else None
 
 
 def span_rects(doc: Document, start: int, end: int) -> list[dict]:
@@ -34,7 +57,7 @@ def ingest(session: Session, storage_dir: Path, filename: str, data: bytes) -> t
         return existing, False
 
     file_type = detect_type(data)
-    parsed = parse_document(data)
+    parsed = parse_document(data, convert_docx=get_settings().docx_convert)
 
     doc = Document(
         id=uuid.uuid4(),
@@ -62,13 +85,11 @@ def ingest(session: Session, storage_dir: Path, filename: str, data: bytes) -> t
             rects=rects,
         ))
 
-    storage_dir.mkdir(parents=True, exist_ok=True)
-    (storage_dir / f"{doc.id}.original.{file_type}").write_bytes(data)
-    if parsed.pdf_bytes is not None:
-        pdf_path(storage_dir, doc.id).write_bytes(parsed.pdf_bytes)
-
     session.add(doc)
     session.flush()
+    save_file(session, storage_dir, doc.id, "original", file_type, data)
+    if parsed.pdf_bytes is not None:
+        save_file(session, storage_dir, doc.id, "pdf", "pdf", parsed.pdf_bytes)
     audit.record(session, "document.uploaded", "document", doc.id, document_id=doc.id, data={
         "filename": doc.filename, "file_type": file_type, "sha256": digest, "size_bytes": len(data),
         "pages": doc.n_pages, "clauses": len(doc.clauses), "has_layout": doc.has_layout, "warnings": doc.warnings,
@@ -78,6 +99,7 @@ def ingest(session: Session, storage_dir: Path, filename: str, data: bytes) -> t
 
 
 def delete(session: Session, storage_dir: Path, doc: Document) -> None:
+    # Database-stored files go with the row (ON DELETE CASCADE); disk files are removed here.
     for f in storage_dir.glob(f"{doc.id}.*"):
         f.unlink(missing_ok=True)
     audit.record(session, "document.deleted", "document", doc.id, document_id=doc.id,

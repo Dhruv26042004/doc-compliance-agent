@@ -1,0 +1,29 @@
+# Render blueprint for the API (free plan: 512 MB RAM, sleeps after 15 idle minutes).
+# Render dashboard -> New -> Blueprint -> pick this repository. See DEPLOY.md.
+services:
+  - type: web
+    name: compliance-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      # Secrets: you are asked for these when the blueprint is created.
+      - key: DATABASE_URL          # Neon connection string (postgresql://...?sslmode=require)
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: CORS_ORIGINS          # JSON list, e.g. ["https://your-app.vercel.app"]
+        sync: false
+      # Lite profile, measured at 442 MB peak on a 141-clause contract under a 512 MB cap.
+      - key: FILE_STORAGE          # the free plan's disk is wiped on every restart
+        value: database
+      - key: PIPELINE_FEWSHOT      # the example pool needs ~200 MB more than the free plan has
+        value: "false"
+      - key: DOCX_CONVERT          # no LibreOffice in the lite image
+        value: "false"
+      - key: LLM_MAX_WORKERS
+        value: "2"
+      - key: CORS_ORIGIN_REGEX     # also allow Vercel preview deployments
+        value: https://.*[.]vercel[.]app

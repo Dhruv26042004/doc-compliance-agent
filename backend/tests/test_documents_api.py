@@ -173,3 +173,25 @@ def test_review_flow_records_labels(client):
     assert labels["R-08"]["applies"] is False and labels["R-08"]["source"] == "overridden"
     assert labels["R-08"]["clause_text"].startswith("3. Assignment.")
     assert labels["R-01"]["clause_text"] is None and labels["R-01"]["source"] == "approved"
+
+
+def test_database_file_storage(client, tmp_path, monkeypatch):
+    """On hosts with a throwaway disk, files live in Postgres instead."""
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "file_storage", "database")
+    data = pdf_bytes()
+    doc_id = upload(client, "msa.pdf", data).json()["id"]
+    assert not list(tmp_path.glob("*"))  # nothing written to disk
+    pdf = client.get(f"/documents/{doc_id}/file")
+    assert pdf.status_code == 200 and pdf.content == data
+    assert client.delete(f"/documents/{doc_id}").status_code == 204
+    assert client.get(f"/documents/{doc_id}/file").status_code == 404
+
+
+def test_docx_conversion_can_be_disabled(client, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "docx_convert", False)
+    body = upload(client, "nda.docx", docx_bytes()).json()
+    assert body["has_layout"] is False and "without page layout" in body["warnings"][0]
