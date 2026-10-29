@@ -24,15 +24,25 @@ services:
       DATA_DIR: /data
       STORAGE_DIR: /storage
       EVAL_RESULTS_DIR: /eval/results
+      LLM_CACHE_DIR: /eval/cache
+      MODEL_CACHE_DIR: /storage/models
     volumes:
-      - ./data:/data:ro
-      - ./eval/results:/eval/results:ro
+      # Writable so `scripts.bootstrap` can build the dataset and models inside the container.
+      - ./data:/data
+      - ./eval/results:/eval/results
+      - ./eval/cache:/eval/cache
       - uploads:/storage
     ports:
       - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   web:
     build:
@@ -42,7 +52,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
 volumes:
   pgdata:

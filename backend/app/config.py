@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     llm_provider: str = "gemini"
     llm_model: str = "gemini-3.5-flash-lite"  # free tier: gemini-3.5-flash allows only 20 requests/day
     llm_cache_dir: Path = REPO_ROOT / "eval" / "cache"  # responses keyed by request hash
+    model_cache_dir: Path = REPO_ROOT / ".cache" / "models"  # downloaded embedding model
     llm_max_workers: int = 4
     # Pipeline stages used by the API (the eval script sets these per run).
     pipeline_prefilter: bool = True

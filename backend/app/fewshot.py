@@ -23,7 +23,7 @@ def _embedder():
     from fastembed import TextEmbedding
 
     # Two threads and small batches keep peak memory low on an ordinary laptop.
-    return TextEmbedding(EMBED_MODEL, threads=2)
+    return TextEmbedding(EMBED_MODEL, threads=2, cache_dir=str(get_settings().model_cache_dir))
 
 
 def embed(texts: list[str], batch_size: int = 32) -> np.ndarray:

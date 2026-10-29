@@ -135,3 +135,16 @@ class AuditEvent(Base):
     data: Mapped[dict] = mapped_column(JSON)
     prev_hash: Mapped[str] = mapped_column(String(64))
     hash: Mapped[str] = mapped_column(String(64), unique=True)
+
+
+class Batch(Base):
+    """A multi-file upload. Files are parsed during the request; analysis runs in the background."""
+
+    __tablename__ = "batches"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    status: Mapped[str] = mapped_column(String(12))  # queued | running | done
+    analyze: Mapped[bool]
+    # [{filename, document_id, analysis_id, status: uploaded|failed|analyzed|analysis_failed, error}]
+    items: Mapped[list] = mapped_column(JSON, default=list)

@@ -22,6 +22,7 @@ data/processed/*.npz
 data/processed/examples.jsonl
 data/processed/examples_parts_*/
 storage/
+.cache/
 
 # OS / editor
 .DS_Store

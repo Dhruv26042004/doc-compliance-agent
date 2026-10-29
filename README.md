@@ -1,57 +1,80 @@
 # Document Compliance System
 
-Checks contracts against a written, numbered policy. Every decision cites the exact rule and the quoted clause it relies on, and uncertain cases are routed to a human reviewer.
+Checks contracts against a written, numbered policy. Every decision cites the exact rule and quotes the clause it relies on; confident decisions are made automatically, uncertain ones go to a human reviewer, and everything is recorded in a tamper-evident audit log.
 
-> **Status:** Phases 0–6 complete. See the roadmap below.
+Built on 510 real commercial contracts from [CUAD](https://www.atticusprojectai.org/cuad), evaluated on contracts the system never saw while it was being tuned, and run entirely on free tools.
+
+## Results on held-out contracts
+
+| | |
+|---|--:|
+| Clauses decided with no human | **90%** |
+| Candidate decisions made automatically | **43%**, at **97.3%** precision |
+| Recall: model alone → with human review | **64% → 78%** |
+| Quotes that exist verbatim in the contract | **100%** |
+| Lawyer-annotated spans recovered by the PDF parser | **99.7%** (40 real PDFs) |
+| Missing liability cap detected (document level) | 93% precision / 93% recall |
+
+Full per-rule tables are below and in [`eval/results/`](eval/results/). Where it fails, and how people catch it: [**LIMITATIONS.md**](LIMITATIONS.md).
+
+## How it works
+
+```mermaid
+flowchart LR
+    U[PDF / DOCX upload] --> P[Parser<br/>PyMuPDF, LibreOffice<br/>clauses + page positions]
+    P --> F{Tier-1 prefilter<br/>TF-IDF + logistic regression}
+    F -- "no rule plausible (~50%)" --> N[No match, decided free]
+    F -- candidates --> L[LLM classifier<br/>Gemini, structured JSON<br/>+ retrieved lawyer-labeled examples]
+    L --> V[Verifier<br/>quote must exist + second LLM check]
+    V --> R{Routing}
+    F -. "small model disagrees" .-> R
+    R -- "confidence >= 0.99, verified" --> A[Automatic decision]
+    R -- "low confidence, rejected,<br/>possible miss, missing required" --> Q[Review queue]
+    Q --> H[Reviewer UI<br/>approve / override + reason]
+    H --> LB[(New labels)]
+    A & H --> AU[(Hash-chained audit log)]
+```
 
 ## Stack
 
 | Layer | Tech |
 |---|---|
-| API | Python 3.12, FastAPI, SQLAlchemy |
+| API | Python 3.12, FastAPI, SQLAlchemy, Alembic |
 | Database | PostgreSQL 16 + pgvector |
-| Frontend | Next.js 15 (App Router), TypeScript, Tailwind CSS |
-| LLM | Gemini 3.5 Flash-Lite (free tier), structured JSON output |
+| Documents | PyMuPDF, LibreOffice (DOCX → PDF), python-docx |
+| LLM | Gemini 3.5 Flash-Lite (free tier), schema-constrained JSON |
+| Small models | scikit-learn (prefilter), bge-small-en via ONNX (example retrieval) |
+| Frontend | Next.js 15, TypeScript, Tailwind CSS, react-pdf, Recharts |
 | Packaging | Docker Compose |
 
-## Run it
+## Quickstart
+
+Needs Docker and a free Gemini API key from [AI Studio](https://aistudio.google.com).
 
 ```bash
-cp .env.example .env        # add an LLM API key when Phase 3 lands
-docker compose up --build
+cp .env.example .env                                        # set GEMINI_API_KEY
+docker compose up -d --build                                # db, api, web
+docker compose run --rm api python -m scripts.bootstrap     # data + models, ~15 min once
+docker compose restart api
+cd backend && uv run python -m scripts.seed_demo --reset    # demo contracts + simulated reviews
 ```
 
-- Web UI: http://localhost:3000
+- Reviewer UI: http://localhost:3000 (documents, review queue, dashboard)
 - API docs: http://localhost:8000/docs
-- Health check: http://localhost:8000/health
+- Batch upload a folder: `uv run python -m scripts.batch_upload <folder>`
+- Screen-recording script: [DEMO.md](DEMO.md)
 
-### Backend without Docker
+### Development without Docker
 
 ```bash
 docker compose up -d db
-cd backend
-uv sync
-uv run uvicorn app.main:app --reload
-uv run pytest
+cd backend && uv sync && uv run python -m scripts.bootstrap
+uv run uvicorn app.main:app --reload       # API on :8000
+uv run pytest                              # 41 tests; needs the db container
+cd ../frontend && npm install && npm run dev
 ```
 
-### Build the dataset
-
-```bash
-cd backend
-uv run python -m scripts.download_cuad   # CUAD v1, CC BY 4.0
-uv run python -m scripts.build_dataset   # clauses, labels, frozen splits
-```
-
-See [data/README.md](data/README.md) for the policy, label method, splits, and per-rule counts.
-
-### Frontend without Docker
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
+See [data/README.md](data/README.md) for the policy, label method, splits, and per-rule counts, and [eval/README.md](eval/README.md) for the evaluation method.
 
 ## Document parsing
 
@@ -215,11 +238,19 @@ The takeaway: every policy change needs a regression run before it goes live, an
 ## Project layout
 
 ```
-backend/     FastAPI app (app/) and tests
-frontend/    Next.js reviewer interface and dashboard
-data/        policy, datasets, and dev/test splits
-eval/        evaluation scripts and results
-docker/      database init scripts
+backend/
+  app/            API: parsing, segmenter, policy, prefilter, few-shot retrieval, classifier,
+                  verifier, pipeline, routing + reviews, audit log, metrics, batches
+  app/prompts/    versioned classifier and verifier prompts
+  scripts/        bootstrap, dataset build, training, evaluation, comparisons, policy diff,
+                  demo seed, batch upload
+  alembic/        database migrations (including the append-only audit trigger)
+  tests/          41 tests: parsing, classifier, pipeline, API, review flow, audit, metrics
+frontend/         Next.js reviewer UI: documents, review queue, document review, dashboard
+data/             policy versions, hand-labeled edge cases, frozen splits, data card
+eval/             evaluation method and every saved run (results/)
+LIMITATIONS.md    where the system fails, fairness, and what humans can and cannot catch
+DEMO.md           screen-recording script
 ```
 
 ## Roadmap
@@ -231,4 +262,4 @@ docker/      database init scripts
 - [x] **Phase 4:** Tiered filtering, few-shot retrieval, and a span verifier
 - [x] **Phase 5:** Confidence routing and the reviewer interface
 - [x] **Phase 6:** Audit log, policy versioning, and a metrics dashboard
-- [ ] **Phase 7:** Batch mode, seed data, and the limitations page
+- [x] **Phase 7:** Batch mode, seed data, and the limitations page
