@@ -13,6 +13,7 @@ from functools import lru_cache
 
 from sqlalchemy.orm import Session
 
+from app import audit
 from app.config import get_settings
 from app.documents import span_rects
 from app.models import Analysis, Decision, Document, Label
@@ -103,6 +104,20 @@ def analyze_document(session: Session, client, policy: Policy, doc: Document,
         decisions=decisions,
     )
     session.add(analysis)
+    session.flush()
+    audit.record(session, "analysis.created", "analysis", analysis.id, document_id=doc.id, data={
+        "policy_id": policy.policy_id, "policy_version": policy.version, "pipeline": analysis.pipeline,
+        "prompt_hash": analysis.prompt_hash, "verify_prompt_hash": described["verify_prompt_hash"],
+        "model_version": analysis.model_version, "auto_threshold": threshold, "llm_calls": analysis.llm_calls,
+        "clauses_screened_out": run.screened_out, "decisions": len(decisions),
+        "routed_to_review": sum(d.route == "review" for d in decisions),
+    })
+    for d in decisions:
+        audit.record(session, "decision.created", "decision", d.id, document_id=doc.id, data={
+            "analysis_id": analysis.id, "rule_id": d.rule_id, "kind": d.kind, "proposed_applies": d.proposed_applies,
+            "verdict": d.verdict, "route": d.route, "route_reason": d.route_reason, "confidence": d.confidence,
+            "clause_id": d.clause_id, "quote": d.quote,
+        })
     session.commit()
     return analysis
 
@@ -133,6 +148,12 @@ def review_decision(session: Session, decision: Decision, action: str, reviewer:
     analysis = decision.analysis
     if all(d.status != "pending" for d in analysis.decisions):
         analysis.status = "complete"
+    audit.record(session, "decision.reviewed", "decision", decision.id, actor=reviewer,
+                 document_id=analysis.document_id, data={
+                     "analysis_id": analysis.id, "rule_id": decision.rule_id, "action": action,
+                     "proposed_applies": decision.proposed_applies, "final_applies": decision.final_applies,
+                     "reason": decision.review_reason, "policy_version": analysis.policy_version,
+                 })
     session.commit()
     return decision
 

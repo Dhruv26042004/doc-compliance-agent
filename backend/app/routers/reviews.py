@@ -5,9 +5,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.analysis import ReviewError, effective_status, review_decision
+from app.audit import verify_chain
+from app.config import get_settings
 from app.db import get_session
-from app.models import Analysis, Clause, Decision, Document, Label
-from app.policy import Policy, load_policy
+from app.models import Analysis, AuditEvent, Clause, Decision, Document, Label
+from app.policy import Policy, available_versions, load_policy
 from app.schemas import AnalysisOut, DecisionOut, QueueItem, ReviewIn
 
 router = APIRouter(tags=["review"])
@@ -90,6 +92,29 @@ def export_labels(session: Session = Depends(get_session)) -> list[dict]:
 
 
 @router.get("/policy")
-def get_policy(version: int = 1) -> dict:
-    """The policy rules, so the interface can show each rule's definition next to a decision."""
-    return load_policy(version).model_dump(mode="json")
+def get_policy(version: int | None = None) -> dict:
+    """A policy version (default: the active one), for showing rule definitions next to decisions."""
+    if version is not None and version not in available_versions():
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"No policy version {version}")
+    return load_policy(version).model_dump(mode="json") | {
+        "active_version": get_settings().active_policy_version, "available_versions": available_versions(),
+    }
+
+
+@router.get("/audit")
+def audit_log(document_id: str | None = None, entity_id: str | None = None, event: str | None = None,
+              limit: int = 200, session: Session = Depends(get_session)) -> list[dict]:
+    """Audit events, newest first."""
+    q = select(AuditEvent).order_by(AuditEvent.seq.desc()).limit(min(limit, 1000))
+    for col, val in ((AuditEvent.document_id, document_id), (AuditEvent.entity_id, entity_id), (AuditEvent.event, event)):
+        if val:
+            q = q.where(col == val)
+    return [{"seq": e.seq, "at": e.at.isoformat(), "actor": e.actor, "event": e.event, "entity_type": e.entity_type,
+             "entity_id": e.entity_id, "document_id": e.document_id, "data": e.data, "hash": e.hash}
+            for e in session.scalars(q)]
+
+
+@router.get("/audit/verify")
+def audit_verify(session: Session = Depends(get_session)) -> dict:
+    """Recompute the hash chain over the whole log."""
+    return verify_chain(session)

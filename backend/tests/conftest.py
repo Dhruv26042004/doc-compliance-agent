@@ -39,7 +39,7 @@ def client(migrated_db, tmp_path):
     from app.routers.documents import get_storage_dir
 
     with engine.begin() as conn:
-        conn.execute(text("TRUNCATE documents CASCADE"))
+        conn.execute(text("TRUNCATE documents, audit_events CASCADE"))
     app.dependency_overrides[get_storage_dir] = lambda: tmp_path
     yield TestClient(app)
     app.dependency_overrides.clear()

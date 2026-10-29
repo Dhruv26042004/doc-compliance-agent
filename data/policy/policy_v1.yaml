@@ -19,6 +19,8 @@
 policy_id: contract-review
 version: 1
 effective_date: 2026-10-28
+changelog:
+  - Initial version.
 
 rules:
   - id: R-01

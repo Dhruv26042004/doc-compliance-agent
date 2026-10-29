@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     data_dir: Path = REPO_ROOT / "data"
     storage_dir: Path = REPO_ROOT / "storage"  # uploaded and converted files
     max_upload_mb: int = 20
+    eval_results_dir: Path = REPO_ROOT / "eval" / "results"
+    # New analyses use this policy version. Evaluate a new version on the test set first.
+    active_policy_version: int = 1
 
     llm_provider: str = "gemini"
     llm_model: str = "gemini-3.5-flash-lite"  # free tier: gemini-3.5-flash allows only 20 requests/day

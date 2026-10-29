@@ -113,3 +113,25 @@ class Label(Base):
     source: Mapped[str] = mapped_column(String(16))  # approved | overridden
     policy_version: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class AuditEvent(Base):
+    """Append-only, hash-chained record of everything the system and its reviewers did.
+
+    No foreign keys: events must outlive the documents they describe. A database
+    trigger rejects UPDATE and DELETE, and each row's hash covers the previous row's
+    hash, so a rewritten history is detectable (see app.audit.verify_chain).
+    """
+
+    __tablename__ = "audit_events"
+
+    seq: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    actor: Mapped[str] = mapped_column(String(128))  # "system" or a reviewer name
+    event: Mapped[str] = mapped_column(String(48), index=True)  # e.g. decision.reviewed
+    entity_type: Mapped[str] = mapped_column(String(24))
+    entity_id: Mapped[str] = mapped_column(String(64), index=True)
+    document_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    data: Mapped[dict] = mapped_column(JSON)
+    prev_hash: Mapped[str] = mapped_column(String(64))
+    hash: Mapped[str] = mapped_column(String(64), unique=True)

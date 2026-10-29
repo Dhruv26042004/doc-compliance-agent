@@ -30,7 +30,7 @@ from app.policy import RuleKind, load_policy
 SPLITS = ("edge_dev", "edge_test", "dev_core", "test_core", "dev", "test")
 
 
-def load_split(name: str, n_contracts: int | None):
+def load_split(name: str, n_contracts: int | None, policy_version: int = 1):
     """Returns ({doc_id: [(clause_id, text)]}, {clause_id: gold rule set}, {doc_id: required verdicts})."""
     data = get_settings().data_dir
     docs, gold, required = defaultdict(list), {}, {}
@@ -39,7 +39,8 @@ def load_split(name: str, n_contracts: int | None):
         for c in cases:
             if c["split"] == name.removeprefix("edge_"):
                 docs["edge"].append((c["id"], c["text"]))
-                gold[c["id"]] = set(c["rule_ids"])
+                # A policy change can change the right answer; such cases carry rule_ids_v<N>.
+                gold[c["id"]] = set(c.get(f"rule_ids_v{policy_version}", c["rule_ids"]))
         return dict(docs), gold, required
 
     ids = json.loads((data / "processed/splits.json").read_text(encoding="utf-8"))[name]
@@ -100,7 +101,7 @@ def fmt(x):
 def markdown(meta, per_rule, micro, doc_level, policy) -> str:
     titles = {r.id: r.title for r in policy.rules}
     out = [
-        f"# {meta['split']}: {meta['model_version']} / pipeline {meta['pipeline']['label']} ({meta['prompt_hash']})",
+        f"# {meta['split']}: {meta['model_version']} / pipeline {meta['pipeline']['label']} ({meta['prompt_hash']}) / policy v{meta['policy_version']}",
         "",
         f"{meta['n_documents']} documents, {meta['n_clauses']} clauses, run {meta['run_at']}. "
         f"Prefilter skipped {meta['screened_out']} clauses; verifier rejected {meta['verifier_rejected']} findings.",
@@ -136,16 +137,17 @@ def main() -> None:
     ap.add_argument("--prefilter", action="store_true", help="tier-1 screen before the LLM")
     ap.add_argument("--fewshot", action="store_true", help="add retrieved labeled examples to each batch")
     ap.add_argument("--verify", action="store_true", help="second-pass quote verifier")
+    ap.add_argument("--policy", type=int, default=1, help="policy version to evaluate")
     args = ap.parse_args()
     if "test" in args.split and not args.allow_test:
         raise SystemExit("Refusing to run on a test split without --allow-test. Tune on dev splits only.")
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
 
-    policy = load_policy(1)
+    policy = load_policy(args.policy)
     client = GeminiClient(model=args.model)
     cfg = PipelineConfig(args.prompt, args.prefilter, args.fewshot, args.verify)
     res = Resources.for_config(cfg)
-    docs, gold, required = load_split(args.split, args.contracts)
+    docs, gold, required = load_split(args.split, args.contracts, policy.version)
     print(f"{args.split}: {len(docs)} documents, {len(gold)} clauses -> {client.model}, pipeline {cfg.label}")
 
     predicted, findings_out, calls, failed = {}, {}, [], []
@@ -212,7 +214,7 @@ def main() -> None:
 
     out_dir = REPO_ROOT / "eval" / "results" / args.split
     out_dir.mkdir(parents=True, exist_ok=True)
-    stem = f"{meta['run_at'].replace(':', '')}_{client.model}_{cfg.label}" + (f"_n{args.contracts}" if args.contracts else "")
+    stem = f"{meta['run_at'].replace(':', '')}_{client.model}_{cfg.label}" + (f"_n{args.contracts}" if args.contracts else "") + (f"_p{policy.version}" if policy.version != 1 else "")
     (out_dir / f"{stem}.json").write_text(json.dumps({
         "meta": meta, "per_rule": per_rule, "micro": micro, "doc_level": doc_level,
         "verifier_rejected": rejected,

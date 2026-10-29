@@ -140,3 +140,51 @@ export const api = {
     }),
   policy: () => request<Policy>("/policy"),
 };
+
+export type RuleMetrics = {
+  rule_id: string;
+  title: string;
+  decisions: number;
+  auto: number;
+  pending: number;
+  reviewed: number;
+  overridden: number;
+  override_rate: number | null;
+  reviewer_precision: number | null;
+};
+
+export type Metrics = {
+  documents: number;
+  analyses: number;
+  decisions: number;
+  auto_decisions: number;
+  automation_rate: number | null;
+  clauses_analyzed: number;
+  clauses_without_human: number | null;
+  pending_reviews: number;
+  reviewed: number;
+  override_rate: number | null;
+  labels: number;
+  rules: RuleMetrics[];
+  volume: { day: string; uploaded: number; analyzed: number; reviewed: number }[];
+};
+
+export type EvalRun = {
+  file: string;
+  split: string;
+  run_at: string;
+  model_version: string;
+  pipeline: string;
+  policy_version: number;
+  n_clauses: number;
+  precision: number | null;
+  recall: number | null;
+  f1: number | null;
+  llm_calls: number;
+  per_rule: Record<string, { precision: number | null; recall: number | null }>;
+};
+
+export const metricsApi = {
+  metrics: () => request<Metrics>("/metrics"),
+  evals: () => request<EvalRun[]>("/metrics/evals"),
+};

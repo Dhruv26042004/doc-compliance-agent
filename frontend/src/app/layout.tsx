@@ -37,6 +37,9 @@ export default function RootLayout({
             <Link href="/queue" className="text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100">
               Review queue
             </Link>
+            <Link href="/dashboard" className="text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100">
+              Dashboard
+            </Link>
           </nav>
         </header>
         {children}

@@ -7,6 +7,7 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import audit
 from app.models import Clause, Document
 from app.parsing import detect_type, parse_document
 from app.segmenter import split_text
@@ -67,6 +68,11 @@ def ingest(session: Session, storage_dir: Path, filename: str, data: bytes) -> t
         pdf_path(storage_dir, doc.id).write_bytes(parsed.pdf_bytes)
 
     session.add(doc)
+    session.flush()
+    audit.record(session, "document.uploaded", "document", doc.id, document_id=doc.id, data={
+        "filename": doc.filename, "file_type": file_type, "sha256": digest, "size_bytes": len(data),
+        "pages": doc.n_pages, "clauses": len(doc.clauses), "has_layout": doc.has_layout, "warnings": doc.warnings,
+    })
     session.commit()
     return doc, True
 
@@ -74,5 +80,7 @@ def ingest(session: Session, storage_dir: Path, filename: str, data: bytes) -> t
 def delete(session: Session, storage_dir: Path, doc: Document) -> None:
     for f in storage_dir.glob(f"{doc.id}.*"):
         f.unlink(missing_ok=True)
+    audit.record(session, "document.deleted", "document", doc.id, document_id=doc.id,
+                 data={"filename": doc.filename, "sha256": doc.sha256})
     session.delete(doc)
     session.commit()

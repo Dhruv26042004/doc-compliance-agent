@@ -9,6 +9,13 @@ uv run python -m scripts.evaluate test_core --allow-test      # final numbers on
 
 Each run writes `results/<split>/<timestamp>_<model>_<prompt>.json` (every prediction, gold label, quote, and confidence) and a `.md` table. LLM responses are cached in `cache/` (git-ignored) under a hash of the full request, so re-running costs nothing and an interrupted run resumes where it stopped.
 
+## Comparing runs
+
+```bash
+uv run python -m scripts.compare_runs <baseline.json> <candidate.json>   # paired bootstrap, 95% intervals
+uv run python -m scripts.policy_diff <policy_v1_run.json> <policy_v2_run.json>   # decision shift between policy versions
+```
+
 ## What is measured
 
 **Clause level, per rule.** For every clause and every rule: did the model say the clause matches the rule, and does the gold label agree?

@@ -23,8 +23,10 @@ services:
       DATABASE_URL: postgresql+psycopg://compliance:compliance@db:5432/compliance
       DATA_DIR: /data
       STORAGE_DIR: /storage
+      EVAL_RESULTS_DIR: /eval/results
     volumes:
       - ./data:/data:ro
+      - ./eval/results:/eval/results:ro
       - uploads:/storage
     ports:
       - "8000:8000"

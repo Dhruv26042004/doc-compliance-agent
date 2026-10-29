@@ -2,7 +2,7 @@
 
 Checks contracts against a written, numbered policy. Every decision cites the exact rule and the quoted clause it relies on, and uncertain cases are routed to a human reviewer.
 
-> **Status:** Phases 0–5 complete. See the roadmap below.
+> **Status:** Phases 0–6 complete. See the roadmap below.
 
 ## Stack
 
@@ -175,6 +175,43 @@ Every review is stored on the decision (reviewer, reason, timestamp) and as a ne
 | `GET /labels` | Every human-confirmed label |
 | `GET /policy` | Rule definitions for display |
 
+## Audit, policy versioning, and metrics (Phase 6)
+
+### Audit log
+
+Every upload, deletion, analysis, decision, and review is written to `audit_events` **in the same transaction** as the change itself. Each event records who acted (the system or a named reviewer) and, for analyses, the model version, prompt hashes, policy version, pipeline, and routing threshold.
+
+- **Append-only:** a database trigger rejects every `UPDATE` and `DELETE` on the table, whoever issues it.
+- **Tamper-evident:** each event's SHA-256 hash covers the previous event's hash. `GET /audit/verify` recomputes the chain; a test disables the trigger, rewrites one event, and confirms verification reports the exact sequence number where the chain breaks.
+- Events have no foreign keys, so they outlive deleted documents.
+
+### Policy versioning
+
+Policies are versioned YAML files with a changelog (`data/policy/policy_v1.yaml`, `policy_v2.yaml`). New analyses use `ACTIVE_POLICY_VERSION`; every analysis stores the version it ran under. Version 2 makes two realistic changes: **R-05 is narrowed** to automatic renewals only, and **R-09 moves from prohibited to review**.
+
+Before activating a version, re-run the test set under it and diff the decisions:
+
+```bash
+uv run python -m scripts.evaluate test_core --policy 2 --prefilter --fewshot --verify --allow-test
+uv run python -m scripts.policy_diff <v1 run.json> <v2 run.json>
+```
+
+Results on `test_core` ([full report](eval/results/policy_diff_v1_v2_test_core.md)):
+
+- **R-05 narrowed as intended:** 6 clauses stopped matching, among them "extended … by mutual written agreement" and "renew … with the written consent of", the opt-in renewals v2 excludes. 5 contracts moved from flag to clear.
+- **R-09's verdict changed as intended:** 6 contracts moved from violation to flag.
+- **Wording matters:** R-09's definition was reworded without changing its meaning, and 3 clauses newly matched, apparently false positives.
+- **Rules the policy did not touch flipped on 37 clauses** (against 146 v1 matches). The policy text is part of every prompt, so editing one rule perturbs the rest, on top of ordinary run-to-run variation (a repeat v1 run would separate the two).
+
+The takeaway: every policy change needs a regression run before it goes live, and these two commands make that run routine.
+
+### Metrics dashboard
+
+`http://localhost:3000/dashboard`:
+
+- **Live numbers** (`GET /metrics`): automation rate, share of clauses that needed no human, review backlog, overall and per-rule override rate, reviewer-measured precision per rule, and daily volume (counted from the audit log).
+- **Offline quality** (`GET /metrics/evals`): micro precision and recall for every saved evaluation run, per split, in run order.
+
 ## Project layout
 
 ```
@@ -193,5 +230,5 @@ docker/      database init scripts
 - [x] **Phase 3:** LLM classifier with structured output; per-rule precision/recall baseline
 - [x] **Phase 4:** Tiered filtering, few-shot retrieval, and a span verifier
 - [x] **Phase 5:** Confidence routing and the reviewer interface
-- [ ] **Phase 6:** Audit log, policy versioning, and a metrics dashboard
+- [x] **Phase 6:** Audit log, policy versioning, and a metrics dashboard
 - [ ] **Phase 7:** Batch mode, seed data, and the limitations page

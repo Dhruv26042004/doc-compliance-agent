@@ -111,6 +111,7 @@ cases:
     rule_ids: [R-05]
     text: "The parties may, by mutual written agreement executed before expiry, renew this Agreement on terms to be negotiated."
     rationale: A renewal option, even one that needs mutual agreement, matches per the definition.
+    rule_ids_v2: []  # policy v2 narrowed R-05 to automatic renewals only
   - id: E20
     split: test
     rule_ids: [R-05]

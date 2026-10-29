@@ -1,0 +1,365 @@
+{
+ "meta": {
+  "split": "edge_test",
+  "run_at": "2026-10-29T10:37:06Z",
+  "model": "gemini-3.5-flash-lite",
+  "model_version": "gemini-3.5-flash-lite",
+  "prompt_version": "v1",
+  "prompt_hash": "ab89510678a8",
+  "pipeline": {
+   "label": "v1+pf+fs+ver",
+   "prompt_version": "v1",
+   "prompt_hash": "ab89510678a8",
+   "prefilter": true,
+   "fewshot": true,
+   "verify": true,
+   "verify_prompt_hash": "59f520e8520b"
+  },
+  "policy_version": 2,
+  "screened_out": 1,
+  "verifier_rejected": 0,
+  "batch": {
+   "max_clauses": 40,
+   "max_chars": 30000
+  },
+  "n_documents": 1,
+  "n_clauses": 24,
+  "n_findings": 14,
+  "quote_found_rate": 1.0,
+  "failed_documents": [],
+  "cost": {
+   "calls": 2,
+   "cached": 0,
+   "input_tokens": 7053,
+   "output_tokens": 2157,
+   "llm_latency_s": 12.8,
+   "wall_s": 13.3
+  }
+ },
+ "per_rule": {
+  "R-01": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-02": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-03": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-04": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-05": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-06": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-07": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-08": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-09": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-10": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-11": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "R-12": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  }
+ },
+ "micro": {
+  "tp": 14,
+  "fp": 0,
+  "fn": 0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0
+ },
+ "doc_level": {},
+ "verifier_rejected": [],
+ "predictions": {
+  "E02": [],
+  "E04": [
+   {
+    "rule_id": "R-01",
+    "quote": "In no event shall Distributor be entitled to recover lost profits or other consequential damages from Company.",
+    "explanation": "The clause excludes recovery of lost profits and consequential damages, fitting the definition of limiting liability types.",
+    "confidence": 1.0,
+    "quote_start": 0,
+    "quote_end": 109,
+    "quote_found": true
+   }
+  ],
+  "E06": [
+   {
+    "rule_id": "R-02",
+    "quote": "THE EXCLUSIONS AND LIMITATIONS IN THIS ARTICLE SHALL NOT APPLY TO CLAIMS FOR INDEMNIFICATION UNDER ARTICLE 9 OR TO BREACHES OF ARTICLE 7 (CONFIDENTIALITY);",
+    "explanation": "The clause explicitly carves out indemnification claims and confidentiality breaches from the liability limitation, making them uncapped.",
+    "confidence": 1.0,
+    "quote_start": 0,
+    "quote_end": 153,
+    "quote_found": true
+   },
+   {
+    "rule_id": "R-01",
+    "quote": "EACH PARTY'S LIABILITY IS LIMITED TO THE FEES PAID.",
+    "explanation": "The clause caps a party's liability to the fees paid.",
+    "confidence": 1.0,
+    "quote_start": 182,
+    "quote_end": 232,
+    "quote_found": true
+   }
+  ],
+  "E08": [
+   {
+    "rule_id": "R-02",
+    "quote": "Distributor shall be liable for all losses of any kind resulting from its breach of this Agreement, without limitation.",
+    "explanation": "The clause expressly states that liability is without limitation for certain breaches.",
+    "confidence": 1.0,
+    "quote_start": 0,
+    "quote_end": 118,
+    "quote_found": true
+   }
+  ],
+  "E10": [
+   {
+    "rule_id": "R-03",
+    "quote": "The validity, interpretation and performance of this Agreement shall be determined under the laws of the Province of Ontario",
+    "explanation": "The clause explicitly states which jurisdiction's law governs the agreement.",
+    "confidence": 1.0,
+    "quote_start": 0,
+    "quote_end": 124,
+    "quote_found": true
+   }
+  ],
+  "E12": [],
+  "E14": [],
+  "E16": [
+   {
+    "rule_id": "R-04",
+    "quote": "Licensee may terminate this Agreement at will by providing Licensor with sixty (60) days' prior written notice.",
+    "explanation": "The clause allows a party to terminate the contract without cause at will upon notice.",
+    "confidence": 1.0,
+    "quote_start": 42,
+    "quote_end": 152,
+    "quote_found": true
+   }
+  ],
+  "E18": [],
+  "E20": [
+   {
+    "rule_id": "R-05",
+    "quote": "To prevent renewal, a party must deliver written notice of non-renewal no later than ninety (90) days before the end of the then-current term.",
+    "explanation": "The clause sets the notice period required for preventing automatic renewal of the contract.",
+    "confidence": 1.0,
+    "quote_start": 0,
+    "quote_end": 141,
+    "quote_found": true
+   }
+  ],
+  "E22": [],
+  "E24": [
+   {
+    "rule_id": "R-06",
+    "quote": "Reseller shall not, during the Term and for one year thereafter, solicit or accept orders for the Products from any customer introduced to it by Manufacturer",
+    "explanation": "The clause restricts a party from soliciting or dealing with the other party's customers after the term.",
+    "confidence": 1.0,
+    "quote_start": 0,
+    "quote_end": 157,
+    "quote_found": true
+   }
+  ],
+  "E26": [],
+  "E28": [
+   {
+    "rule_id": "R-07",
+    "quote": "Company grants Partner the sole right to market the Services to hospitals in the State of Texas.",
+    "explanation": "The clause grants exclusive territory/marketing rights to a party.",
+    "confidence": 1.0,
+    "quote_start": 0,
+    "quote_end": 95,
+    "quote_found": true
+   }
+  ],
+  "E30": [],
+  "E32": [
+   {
+    "rule_id": "R-08",
+    "quote": "Any attempted assignment in violation of this Section shall be null and void.",
+    "explanation": "The clause restricts contract assignment by declaring unauthorized assignments void.",
+    "confidence": 1.0,
+    "quote_start": 0,
+    "quote_end": 76,
+    "quote_found": true
+   }
+  ],
+  "E34": [
+   {
+    "rule_id": "R-09",
+    "quote": "Consultant agrees that all deliverables shall be deemed 'works made for hire' and that Client shall own all copyrights therein.",
+    "explanation": "The clause transfers intellectual property ownership of all deliverables to the counterparty.",
+    "confidence": 1.0,
+    "quote_start": 0,
+    "quote_end": 126,
+    "quote_found": true
+   }
+  ],
+  "E36": [],
+  "E38": [
+   {
+    "rule_id": "R-10",
+    "quote": "Supplier represents that the prices charged to Buyer are no higher than those charged to any other customer for comparable quantities.",
+    "explanation": "The clause requires the supplier to offer prices at least as favorable as those given to any other customer.",
+    "confidence": 1.0,
+    "quote_start": 0,
+    "quote_end": 133,
+    "quote_found": true
+   }
+  ],
+  "E40": [],
+  "E42": [],
+  "E43": [
+   {
+    "rule_id": "R-11",
+    "quote": "Upon any breach of the exclusivity covenant in Section 4, Distributor shall pay Company a fixed sum of $50,000 per occurrence.",
+    "explanation": "The clause fixes a predetermined sum payable as a penalty or liquidated damages upon breach.",
+    "confidence": 1.0,
+    "quote_start": 0,
+    "quote_end": 125,
+    "quote_found": true
+   }
+  ],
+  "E45": [
+   {
+    "rule_id": "R-12",
+    "quote": "Company or its independent accountant may examine Distributor's books and records relating to sales of the Products.",
+    "explanation": "The clause grants a party the right to inspect and examine the other's books and records.",
+    "confidence": 1.0,
+    "quote_start": 24,
+    "quote_end": 139,
+    "quote_found": true
+   }
+  ],
+  "E48": []
+ },
+ "gold": {
+  "E02": [],
+  "E04": [
+   "R-01"
+  ],
+  "E06": [
+   "R-01",
+   "R-02"
+  ],
+  "E08": [
+   "R-02"
+  ],
+  "E10": [
+   "R-03"
+  ],
+  "E12": [],
+  "E14": [],
+  "E16": [
+   "R-04"
+  ],
+  "E18": [],
+  "E20": [
+   "R-05"
+  ],
+  "E22": [],
+  "E24": [
+   "R-06"
+  ],
+  "E26": [],
+  "E28": [
+   "R-07"
+  ],
+  "E30": [],
+  "E32": [
+   "R-08"
+  ],
+  "E34": [
+   "R-09"
+  ],
+  "E36": [],
+  "E38": [
+   "R-10"
+  ],
+  "E40": [],
+  "E42": [],
+  "E43": [
+   "R-11"
+  ],
+  "E45": [
+   "R-12"
+  ],
+  "E48": []
+ }
+}

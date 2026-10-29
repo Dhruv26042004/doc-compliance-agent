@@ -35,6 +35,7 @@ class Policy(BaseModel):
     policy_id: str
     version: int
     effective_date: date
+    changelog: list[str] = []  # what changed since the previous version, and why
     rules: list[Rule]
 
     @model_validator(mode="after")
@@ -54,6 +55,13 @@ class Policy(BaseModel):
         return {c: r.id for r in self.rules for c in r.cuad_categories}
 
 
-def load_policy(version: int = 1) -> Policy:
+def available_versions() -> list[int]:
+    files = (get_settings().data_dir / "policy").glob("policy_v*.yaml")
+    return sorted(int(f.stem.removeprefix("policy_v")) for f in files)
+
+
+def load_policy(version: int | None = None) -> Policy:
+    """A specific version, or the active one from settings."""
+    version = version or get_settings().active_policy_version
     path = get_settings().data_dir / "policy" / f"policy_v{version}.yaml"
     return Policy.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))

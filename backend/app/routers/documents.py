@@ -121,7 +121,7 @@ def analyze(
     """
     doc = _get(session, doc_id)
     try:
-        analysis = analyze_document(session, client, load_policy(1), doc, cfg)
+        analysis = analyze_document(session, client, load_policy(), doc, cfg)
     except LLMError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"LLM request failed: {exc}") from exc
     return analysis_out(session, analysis)
