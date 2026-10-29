@@ -98,7 +98,7 @@ class FakeLLM:
 
         data = {"results": [
             {"clause_id": "c2", "matches": [{"rule_id": "R-03", "quote": "governed by the laws of the State of Delaware",
-                                             "explanation": "Names Delaware law.", "confidence": 0.97}]},
+                                             "explanation": "Names Delaware law.", "confidence": 1.0}]},
             {"clause_id": "c3", "matches": [{"rule_id": "R-08", "quote": "may only be transferred with permission",
                                              "explanation": "Restricts assignment.", "confidence": 0.6}]},
         ]}
@@ -106,26 +106,70 @@ class FakeLLM:
         return LLMResult(data=data, model_version="fake-model-001", input_tokens=1, output_tokens=1, latency_s=0)
 
 
-def test_analyze_maps_findings_to_verdicts_and_highlights(client):
-    from app.main import app
+def analyzed(client):
     from app.analysis import default_config
+    from app.main import app
     from app.pipeline import PipelineConfig
     from app.routers.documents import get_llm_client
 
     app.dependency_overrides[get_llm_client] = lambda: FakeLLM()
-    app.dependency_overrides[default_config] = lambda: PipelineConfig()  # plain classifier stage only
+    app.dependency_overrides[default_config] = lambda: PipelineConfig()  # classifier stage only
     doc = upload(client, "msa.pdf", pdf_bytes()).json()
     resp = client.post(f"/documents/{doc['id']}/analyze")
     assert resp.status_code == 200, resp.text
-    body = resp.json()
+    return doc, resp.json()
 
-    assert body["model_version"] == "fake-model-001" and body["policy_version"] == 1 and body["pipeline"] == "v1"
-    assert body["required_rules"] == {"R-01": "violated", "R-03": "satisfied"}
-    gov, assign = body["findings"]
-    assert (gov["rule_id"], gov["verdict"], gov["quote_found"]) == ("R-03", "satisfies", True)
+
+def test_analyze_stores_and_routes_decisions(client):
+    doc, body = analyzed(client)
+    assert body["model_version"] == "fake-model-001" and body["pipeline"] == "v1" and body["auto_threshold"] == 0.99
+    by_rule = {d["rule_id"]: d for d in body["decisions"]}
+
+    gov = by_rule["R-03"]  # verified quote at confidence 1.0: decided automatically
+    assert (gov["kind"], gov["route"], gov["status"], gov["final_applies"]) == ("finding", "auto", "auto", True)
     assert doc["text"][gov["quote_start"] : gov["quote_end"]] == "governed by the laws of the State of Delaware"
-    assert gov["rects"] == doc["clauses"][1]["rects"]  # single-line clause: quote is on that line
-    # A quote that is not in the clause is flagged, and the whole clause is highlighted instead.
-    assert (assign["verdict"], assign["quote_found"], assign["quote_start"]) == ("flag", False, None)
+    assert gov["clause_idx"] == 1 and gov["rule_title"] == "Governing law required"
+
+    assign = by_rule["R-08"]  # low confidence, and the quote is not in the clause: review
+    assert (assign["route"], assign["status"], assign["quote_start"]) == ("review", "pending", None)
     assert assign["rects"] == doc["clauses"][2]["rects"]
-    assert body["n_violations"] == 1 and body["n_flags"] == 1  # R-01 missing; R-08 flagged
+
+    cap = by_rule["R-01"]  # nothing satisfies the required rule: a human confirms
+    assert (cap["kind"], cap["verdict"], cap["route"], cap["clause_id"]) == ("missing_required", "violated", "review", None)
+
+    assert body["status"] == "needs_review" and (body["n_auto"], body["n_pending"]) == (1, 2)
+    assert body["rule_status"]["R-03"] == "satisfied" and body["rule_status"]["R-01"] == "pending"
+    assert client.get(f"/documents/{doc['id']}/analysis").json()["id"] == body["id"]
+
+
+def test_review_flow_records_labels(client):
+    doc, body = analyzed(client)
+    queue = client.get("/reviews/queue").json()
+    assert {q["rule_id"] for q in queue} == {"R-01", "R-08"}
+    assert all(q["filename"] == "msa.pdf" for q in queue)
+    assert next(q for q in queue if q["rule_id"] == "R-08")["clause_text"].startswith("3. Assignment.")
+    assert [q["rule_id"] for q in client.get("/reviews/queue", params={"rule_id": "R-08"}).json()] == ["R-08"]
+
+    ids = {q["rule_id"]: q["id"] for q in queue}
+    review = lambda rule, **body: client.post(f"/decisions/{ids[rule]}/review", json=body)  # noqa: E731
+
+    assert review("R-08", action="override").status_code == 422  # an override needs a reason
+    assert review("R-08", action="delete").status_code == 422
+
+    ok = review("R-01", action="approve", reviewer="dana")
+    assert ok.status_code == 200 and ok.json()["status"] == "approved" and ok.json()["final_applies"] is False
+    assert review("R-01", action="approve").status_code == 409  # already reviewed
+
+    # The finding says R-08 applies; the reviewer disagrees.
+    over = review("R-08", action="override", reviewer="dana", reason="Clause 3 restricts assignment; quote was wrong.")
+    assert over.json()["status"] == "overridden" and over.json()["final_applies"] is False
+
+    final = client.get(f"/analyses/{body['id']}").json()
+    assert final["status"] == "complete" and final["n_pending"] == 0
+    assert final["rule_status"]["R-01"] == "violated" and final["rule_status"]["R-08"] == "clear"
+    assert client.get("/reviews/queue").json() == []
+
+    labels = {l["rule_id"]: l for l in client.get("/labels").json()}
+    assert labels["R-08"]["applies"] is False and labels["R-08"]["source"] == "overridden"
+    assert labels["R-08"]["clause_text"].startswith("3. Assignment.")
+    assert labels["R-01"]["clause_text"] is None and labels["R-01"]["source"] == "approved"

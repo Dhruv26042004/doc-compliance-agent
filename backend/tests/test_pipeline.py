@@ -56,6 +56,10 @@ class StubPrefilter:
     def screen(self, texts):
         return [{"R-03"} if "governed" in t else set() for t in texts]
 
+    def classify(self, texts):
+        # Agrees with the LLM on R-03, and thinks the delivery clause is about audit rights.
+        return [{"R-03"} if "governed" in t else {"R-12"} for t in texts]
+
 
 def test_pipeline_skips_screened_clauses_and_adds_examples():
     examples = ExampleIndex([Example("Governed by New York law.", ["R-03"]), Example("Payment is due monthly.", [])],
@@ -68,6 +72,7 @@ def test_pipeline_skips_screened_clauses_and_adds_examples():
 
     assert run.screened_out == 1
     assert set(run.findings) == {"s2"}  # local id c1 maps to the only clause sent
+    assert run.possible_misses == [("s1", "R-12")]  # small model flags it, the LLM never saw it
     (prompt,) = llm.prompts
     assert "[R-03] Governed by New York law." in prompt and "[matches no rule]" in prompt
     assert BORING not in prompt

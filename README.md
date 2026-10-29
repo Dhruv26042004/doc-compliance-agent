@@ -2,7 +2,7 @@
 
 Checks contracts against a written, numbered policy. Every decision cites the exact rule and the quoted clause it relies on, and uncertain cases are routed to a human reviewer.
 
-> **Status:** Phases 0–4 complete. See the roadmap below.
+> **Status:** Phases 0–5 complete. See the roadmap below.
 
 ## Stack
 
@@ -134,6 +134,47 @@ The decision pipeline is now four stages, each switchable for measurement (`scri
 
 **What this shows.** On dev, the precision gain (+13 points) and F1 gain (+5 points) are statistically significant. On the held-out test set, accuracy did not change significantly. The dev improvement did not replicate, and this README reports that instead of a best-case number. What did carry over: every finding now cites text that exists in the contract, runs are 2.4× faster, and half the clauses never reach the LLM. A small TF-IDF model is roughly as accurate as the LLM on this task, which suggests the ceiling is set partly by CUAD label noise and clause-level scoring rather than by the model.
 
+## Human in the loop (Phase 5)
+
+Every analysis is stored as a set of **decisions**, each routed either to an automatic outcome or to a reviewer:
+
+| Decision | Proposed outcome | Route |
+|---|---|---|
+| Finding with a verified quote, confidence ≥ 0.99 | Clause matches the rule | **Automatic** |
+| Finding below the threshold | Clause matches the rule | Review |
+| Finding the verifier rejected | Clause does not match | Review |
+| Possible miss: the small model flags a rule the LLM did not | Clause does not match | Review |
+| Required rule with no matching clause | Document violates the rule | Review (high severity) |
+
+Confidence can only route findings that exist, so the possible-miss check is the safety net for recall. The threshold (0.99) is the lowest value whose automatic findings reach 95% precision on `dev_core`.
+
+**Routing results** (thresholds fixed on dev; reviewers assumed to decide correctly):
+
+| | Dev | Held-out test |
+|---|--:|--:|
+| Clauses decided with no human | 89% | **90%** |
+| Candidate decisions made automatically | 41% | **43%** |
+| Precision of automatic decisions | 98.3% | **97.3%** |
+| Recall: model alone → with review | 68% → 79% | **64% → 78%** |
+
+**Reviewer workflow** (Next.js at http://localhost:3000):
+
+- **Documents:** upload a PDF or DOCX, run the check, and see how many decisions await review.
+- **Review queue:** every pending decision across documents, filterable by rule.
+- **Document review:** the contract with color-coded highlights on the exact quoted text (red violation, amber flag, green satisfied, blue awaiting review), next to each decision's proposal, quote, explanation, confidence, routing reason, and the rule's definition. **Approve** or **Override**; an override requires a reason.
+- **Per-rule status** for the document updates as decisions are reviewed: violated, flagged, satisfied, clear, or pending.
+
+Every review is stored on the decision (reviewer, reason, timestamp) and as a new **label** (`GET /labels`), ready to retrain the prefilter and grow the example pool.
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /documents/{id}/analyze` | Run the pipeline, route and store every decision |
+| `GET /documents/{id}/analysis` | Latest analysis with decisions and per-rule status |
+| `GET /reviews/queue?rule_id=` | Pending decisions across documents |
+| `POST /decisions/{id}/review` | `{"action": "approve" \| "override", "reviewer", "reason"}` |
+| `GET /labels` | Every human-confirmed label |
+| `GET /policy` | Rule definitions for display |
+
 ## Project layout
 
 ```
@@ -151,6 +192,6 @@ docker/      database init scripts
 - [x] **Phase 2:** PDF/DOCX parsing into clauses, with page and position data
 - [x] **Phase 3:** LLM classifier with structured output; per-rule precision/recall baseline
 - [x] **Phase 4:** Tiered filtering, few-shot retrieval, and a span verifier
-- [ ] **Phase 5:** Confidence routing and the reviewer interface
+- [x] **Phase 5:** Confidence routing and the reviewer interface
 - [ ] **Phase 6:** Audit log, policy versioning, and a metrics dashboard
 - [ ] **Phase 7:** Batch mode, seed data, and the limitations page

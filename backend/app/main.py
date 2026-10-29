@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.db import check_database
-from app.routers import documents
+from app.routers import documents, reviews
 
 app = FastAPI(
     title="Document Compliance API",
@@ -19,6 +19,7 @@ app.add_middleware(
 )
 
 app.include_router(documents.router)
+app.include_router(reviews.router)
 
 
 @app.get("/health")

@@ -11,10 +11,11 @@ from app.analysis import analyze_document, default_config
 from app.config import get_settings
 from app.db import get_session
 from app.llm import GeminiClient, LLMError
-from app.models import Clause, Document
+from app.models import Analysis, Clause, Document
 from app.parsing import ParseError
 from app.pipeline import PipelineConfig
 from app.policy import load_policy
+from app.routers.reviews import analysis_out
 from app.schemas import AnalysisOut, DocumentDetail, DocumentSummary
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -114,9 +115,24 @@ def analyze(
     client=Depends(get_llm_client),
     cfg: PipelineConfig = Depends(default_config),
 ) -> AnalysisOut:
-    """Check every clause against the current policy. Slow on the free tier: about 30s per 20 clauses."""
+    """Check every clause against the current policy, route each decision, and store the result.
+
+    Slow on the free tier: about a minute for a typical contract.
+    """
     doc = _get(session, doc_id)
     try:
-        return analyze_document(client, load_policy(1), doc, cfg)
+        analysis = analyze_document(session, client, load_policy(1), doc, cfg)
     except LLMError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"LLM request failed: {exc}") from exc
+    return analysis_out(session, analysis)
+
+
+@router.get("/{doc_id}/analysis", response_model=AnalysisOut)
+def latest_analysis(doc_id: uuid.UUID, session: Session = Depends(get_session)) -> AnalysisOut:
+    _get(session, doc_id)
+    analysis = session.scalar(
+        select(Analysis).where(Analysis.document_id == doc_id).order_by(Analysis.created_at.desc()).limit(1)
+    )
+    if analysis is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "This document has not been analyzed yet")
+    return analysis_out(session, analysis)

@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     pipeline_prefilter: bool = True
     pipeline_fewshot: bool = True
     pipeline_verify: bool = True
+    # Verified findings at or above this confidence are decided automatically. Chosen on
+    # dev_core as the lowest threshold whose automatic findings reach 95% precision.
+    routing_auto_threshold: float = 0.99
     gemini_api_key: str = ""
     groq_api_key: str = ""
     ollama_base_url: str = "http://localhost:11434"

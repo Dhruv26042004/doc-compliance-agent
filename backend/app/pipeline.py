@@ -47,6 +47,8 @@ class PipelineRun:
     calls: list[LLMResult] = field(default_factory=list)
     screened_out: int = 0  # clauses decided "no match" by the prefilter, never sent to the LLM
     rejected: list[dict] = field(default_factory=list)  # findings removed by the verifier
+    # (clause id, rule id) pairs the small model flags but the LLM did not: possible misses.
+    possible_misses: list[tuple[str, str]] = field(default_factory=list)
 
 
 @dataclass
@@ -72,6 +74,7 @@ def run_pipeline(client, policy: Policy, clauses: list[tuple[str, str]], cfg: Pi
     run = PipelineRun()
     text = dict(clauses)
 
+    all_clauses = clauses
     if cfg.prefilter:
         candidates = res.prefilter.screen([t for _, t in clauses])
         sent = [c for c, cand in zip(clauses, candidates) if cand]
@@ -87,4 +90,13 @@ def run_pipeline(client, policy: Policy, clauses: list[tuple[str, str]], cfg: Pi
         v = verify(client, policy, run.findings, text)
         run.findings, run.rejected = v.kept, v.rejected
         run.calls += v.calls
+
+    if cfg.prefilter:
+        # Safety net for recall: confidence can only route findings that exist, so a
+        # clause the small model is confident about but the LLM left empty goes to review.
+        small = res.prefilter.classify([t for _, t in all_clauses])
+        rejected = {(r["clause_id"], r["rule_id"]) for r in run.rejected}
+        for (cid, _), rules in zip(all_clauses, small):
+            found = {f.rule_id for f in run.findings.get(cid, [])}
+            run.possible_misses += [(cid, r) for r in sorted(rules - found) if (cid, r) not in rejected]
     return run
