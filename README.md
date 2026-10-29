@@ -2,7 +2,7 @@
 
 Checks contracts against a written, numbered policy. Every decision cites the exact rule and the quoted clause it relies on, and uncertain cases are routed to a human reviewer.
 
-> **Status:** Phases 0–3 complete. See the roadmap below.
+> **Status:** Phases 0–4 complete. See the roadmap below.
 
 ## Stack
 
@@ -102,6 +102,38 @@ One LLM pass per contract: clauses are sent in batches of up to 40 with the full
 
 Full tables: [`eval/results/`](eval/results/). Method and caveats: [`eval/README.md`](eval/README.md).
 
+## Accuracy work (Phase 4)
+
+The decision pipeline is now four stages, each switchable for measurement (`scripts/evaluate.py --prefilter --fewshot --verify`):
+
+1. **Tier-1 prefilter.** A TF-IDF + logistic regression model per rule, trained on dev contracts outside `dev_core`. Clauses that score low for every rule are decided "no match" without an LLM call. The threshold was chosen on out-of-fold training data: it skips about half the clauses and keeps 97% of labeled ones.
+2. **Retrieved examples.** For each batch, the nearest lawyer-highlighted CUAD spans and "hard negatives" (suspicious-looking clauses that match nothing) are added to the prompt. Embeddings: `bge-small-en` via ONNX on CPU, 7,205 examples from training contracts only.
+3. **LLM classifier.** Unchanged from Phase 3.
+4. **Verifier.** Findings whose quote is not in the clause are rejected (on dev those were right only 27% of the time). A second LLM call re-reads each remaining finding against the rule definition. Rejected findings are kept with the reason, for human review.
+
+**Ablation on the dev set** (`dev_core`, where choices were made):
+
+| Pipeline | Precision | Recall | F1 | LLM calls |
+|---|--:|--:|--:|--:|
+| Baseline | 72% | 69% | 70% | 75 |
+| + prefilter | 74% | 67% | 70% | 50 |
+| + prefilter + verifier | 82% | 62% | 71% | 81 |
+| + prefilter + examples | 73% | 70% | 72% | 50 |
+| **+ prefilter + examples + verifier** | **85%** | 68% | **76%** | 82 |
+| Small model alone (no LLM) | 72% | 64% | – | 0 |
+
+**Held-out test set** (`test_core`, run once with the configuration chosen on dev), with 95% intervals from a paired bootstrap over contracts (`scripts/compare_runs.py`):
+
+| | Baseline | Final pipeline | Change (95% interval) |
+|---|--:|--:|--:|
+| Precision | 78% | 80% | +2.8% (−3.9% to +9.3%) |
+| Recall | 67% | 64% | −3.4% (−10.1% to +3.0%) |
+| F1 | 72% | 71% | −0.9% (−5.1% to +3.6%) |
+| Quotes found verbatim | 92% | **100%** | |
+| Wall time | 714s | **303s** | 2.4× faster |
+
+**What this shows.** On dev, the precision gain (+13 points) and F1 gain (+5 points) are statistically significant. On the held-out test set, accuracy did not change significantly. The dev improvement did not replicate, and this README reports that instead of a best-case number. What did carry over: every finding now cites text that exists in the contract, runs are 2.4× faster, and half the clauses never reach the LLM. A small TF-IDF model is roughly as accurate as the LLM on this task, which suggests the ceiling is set partly by CUAD label noise and clause-level scoring rather than by the model.
+
 ## Project layout
 
 ```
@@ -118,7 +150,7 @@ docker/      database init scripts
 - [x] **Phase 1:** Policy (numbered, testable rules) and dataset (CUAD + hand-labeled edge cases), with fixed dev/test splits
 - [x] **Phase 2:** PDF/DOCX parsing into clauses, with page and position data
 - [x] **Phase 3:** LLM classifier with structured output; per-rule precision/recall baseline
-- [ ] **Phase 4:** Tiered filtering, few-shot retrieval, and a span verifier
+- [x] **Phase 4:** Tiered filtering, few-shot retrieval, and a span verifier
 - [ ] **Phase 5:** Confidence routing and the reviewer interface
 - [ ] **Phase 6:** Audit log, policy versioning, and a metrics dashboard
 - [ ] **Phase 7:** Batch mode, seed data, and the limitations page

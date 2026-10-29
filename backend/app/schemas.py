@@ -65,15 +65,29 @@ class FindingOut(BaseModel):
     rects: list[Rect]
 
 
+class RejectedOut(BaseModel):
+    """A finding the verifier removed; kept for review and audit rather than discarded."""
+
+    clause_id: uuid.UUID
+    clause_idx: int
+    rule_id: str
+    quote: str
+    stage: str  # quote_not_found | llm
+    reason: str
+
+
 class AnalysisOut(BaseModel):
     document_id: uuid.UUID
     policy_id: str
     policy_version: int
     prompt_version: str
     prompt_hash: str
+    pipeline: str  # e.g. "v1+pf+ver"
     model_version: str
     llm_calls: int
+    clauses_screened_out: int
     required_rules: dict[str, str]  # rule id -> satisfied | violated
     n_violations: int
     n_flags: int
     findings: list[FindingOut]
+    rejected: list[RejectedOut]

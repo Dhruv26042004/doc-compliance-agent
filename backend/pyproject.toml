@@ -16,6 +16,9 @@ dependencies = [
     "python-multipart>=0.0.32",
     "alembic>=1.20.1",
     "google-genai>=2.33.0",
+    "scikit-learn>=1.9.1",
+    "joblib>=1.6.0",
+    "fastembed>=0.9.1",
 ]
 
 [dependency-groups]

@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     llm_model: str = "gemini-3.5-flash-lite"  # free tier: gemini-3.5-flash allows only 20 requests/day
     llm_cache_dir: Path = REPO_ROOT / "eval" / "cache"  # responses keyed by request hash
     llm_max_workers: int = 4
+    # Pipeline stages used by the API (the eval script sets these per run).
+    pipeline_prefilter: bool = True
+    pipeline_fewshot: bool = True
+    pipeline_verify: bool = True
     gemini_api_key: str = ""
     groq_api_key: str = ""
     ollama_base_url: str = "http://localhost:11434"

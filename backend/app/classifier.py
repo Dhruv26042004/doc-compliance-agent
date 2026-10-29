@@ -7,6 +7,7 @@ cannot be found is kept but flagged, and the Phase 4 verifier builds on that fla
 
 import hashlib
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -95,8 +96,9 @@ def batches(clauses: list[tuple[str, str]]) -> list[list[tuple[str, str]]]:
     return out
 
 
-def user_prompt(batch: list[tuple[str, str]]) -> str:
-    return "Clauses:\n\n" + "\n\n".join(f"[c{i}]\n{text}" for i, (_, text) in enumerate(batch, start=1))
+def user_prompt(batch: list[tuple[str, str]], context: str = "") -> str:
+    clauses = "Clauses:\n\n" + "\n\n".join(f"[c{i}]\n{text}" for i, (_, text) in enumerate(batch, start=1))
+    return f"{context}\n\n{clauses}" if context else clauses
 
 
 # ---------------------------------------------------------------- quotes
@@ -118,13 +120,17 @@ def locate_quote(text: str, quote: str) -> tuple[int, int] | None:
 # ---------------------------------------------------------------- run
 
 
-def classify(client, policy: Policy, clauses: list[tuple[str, str]], prompt_version: str = "v1", pool=None) -> ClassifierRun:
-    """clauses: (clause_id, text) pairs from ONE document, in reading order."""
+def classify(client, policy: Policy, clauses: list[tuple[str, str]], prompt_version: str = "v1", pool=None,
+             context: Callable[[list[tuple[str, str]]], str] | None = None) -> ClassifierRun:
+    """clauses: (clause_id, text) pairs from ONE document, in reading order.
+
+    context, if given, returns extra prompt text for a batch (e.g. retrieved examples).
+    """
     system = system_prompt(policy, prompt_version)
     schema = response_schema(policy)
     run = ClassifierRun()
     todo = batches(clauses)
-    call = lambda b: (b, client.generate(system, user_prompt(b), schema))  # noqa: E731
+    call = lambda b: (b, client.generate(system, user_prompt(b, context(b) if context else ""), schema))  # noqa: E731
     results = pool.map(call, todo) if pool else map(call, todo)
 
     for batch, result in results:

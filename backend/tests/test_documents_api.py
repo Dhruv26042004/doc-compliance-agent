@@ -108,15 +108,18 @@ class FakeLLM:
 
 def test_analyze_maps_findings_to_verdicts_and_highlights(client):
     from app.main import app
+    from app.analysis import default_config
+    from app.pipeline import PipelineConfig
     from app.routers.documents import get_llm_client
 
     app.dependency_overrides[get_llm_client] = lambda: FakeLLM()
+    app.dependency_overrides[default_config] = lambda: PipelineConfig()  # plain classifier stage only
     doc = upload(client, "msa.pdf", pdf_bytes()).json()
     resp = client.post(f"/documents/{doc['id']}/analyze")
     assert resp.status_code == 200, resp.text
     body = resp.json()
 
-    assert body["model_version"] == "fake-model-001" and body["policy_version"] == 1
+    assert body["model_version"] == "fake-model-001" and body["policy_version"] == 1 and body["pipeline"] == "v1"
     assert body["required_rules"] == {"R-01": "violated", "R-03": "satisfied"}
     gov, assign = body["findings"]
     assert (gov["rule_id"], gov["verdict"], gov["quote_found"]) == ("R-03", "satisfies", True)

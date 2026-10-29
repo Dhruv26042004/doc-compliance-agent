@@ -21,9 +21,10 @@ from datetime import datetime, timezone
 
 import yaml
 
-from app.classifier import MAX_BATCH_CHARS, MAX_BATCH_CLAUSES, classify, load_prompt
+from app.classifier import MAX_BATCH_CHARS, MAX_BATCH_CLAUSES
 from app.config import REPO_ROOT, get_settings
 from app.llm import DailyQuotaExceeded, GeminiClient, LLMError
+from app.pipeline import PipelineConfig, Resources, run_pipeline
 from app.policy import RuleKind, load_policy
 
 SPLITS = ("edge_dev", "edge_test", "dev_core", "test_core", "dev", "test")
@@ -99,9 +100,10 @@ def fmt(x):
 def markdown(meta, per_rule, micro, doc_level, policy) -> str:
     titles = {r.id: r.title for r in policy.rules}
     out = [
-        f"# {meta['split']}: {meta['model_version']} / prompt {meta['prompt_version']} ({meta['prompt_hash']})",
+        f"# {meta['split']}: {meta['model_version']} / pipeline {meta['pipeline']['label']} ({meta['prompt_hash']})",
         "",
-        f"{meta['n_documents']} documents, {meta['n_clauses']} clauses, run {meta['run_at']}.",
+        f"{meta['n_documents']} documents, {meta['n_clauses']} clauses, run {meta['run_at']}. "
+        f"Prefilter skipped {meta['screened_out']} clauses; verifier rejected {meta['verifier_rejected']} findings.",
         "",
         "| Rule | Precision | Recall | F1 | TP | FP | FN |",
         "|---|--:|--:|--:|--:|--:|--:|",
@@ -131,6 +133,9 @@ def main() -> None:
     ap.add_argument("--prompt", default="v1")
     ap.add_argument("--workers", type=int, default=get_settings().llm_max_workers)
     ap.add_argument("--allow-test", action="store_true", help="required for test splits")
+    ap.add_argument("--prefilter", action="store_true", help="tier-1 screen before the LLM")
+    ap.add_argument("--fewshot", action="store_true", help="add retrieved labeled examples to each batch")
+    ap.add_argument("--verify", action="store_true", help="second-pass quote verifier")
     args = ap.parse_args()
     if "test" in args.split and not args.allow_test:
         raise SystemExit("Refusing to run on a test split without --allow-test. Tune on dev splits only.")
@@ -138,14 +143,16 @@ def main() -> None:
 
     policy = load_policy(1)
     client = GeminiClient(model=args.model)
-    _, prompt_hash = load_prompt(args.prompt)
+    cfg = PipelineConfig(args.prompt, args.prefilter, args.fewshot, args.verify)
+    res = Resources.for_config(cfg)
     docs, gold, required = load_split(args.split, args.contracts)
-    print(f"{args.split}: {len(docs)} documents, {len(gold)} clauses -> {client.model}, prompt {args.prompt} ({prompt_hash})")
+    print(f"{args.split}: {len(docs)} documents, {len(gold)} clauses -> {client.model}, pipeline {cfg.label}")
 
     predicted, findings_out, calls, failed = {}, {}, [], []
+    screened_out, rejected = 0, []
     t0 = time.perf_counter()
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
-        futures = {pool.submit(classify, client, policy, clauses, args.prompt): doc_id for doc_id, clauses in docs.items()}
+        futures = {pool.submit(run_pipeline, client, policy, clauses, cfg, res): doc_id for doc_id, clauses in docs.items()}
         for n, fut in enumerate(as_completed(futures), start=1):
             doc_id = futures[fut]
             try:
@@ -161,6 +168,8 @@ def main() -> None:
                 print(f"  [{n}/{len(docs)}] {doc_id} FAILED: {exc}")
                 continue
             calls += run.calls
+            screened_out += run.screened_out
+            rejected += run.rejected
             for cid, fs in run.findings.items():
                 predicted[cid] = {f.rule_id for f in fs}
                 findings_out[cid] = [asdict(f) | {"quote_found": f.quote_found} for f in fs]
@@ -179,8 +188,11 @@ def main() -> None:
         "model": client.model,
         "model_version": sorted({c.model_version for c in calls})[-1] if calls else client.model,
         "prompt_version": args.prompt,
-        "prompt_hash": prompt_hash,
+        "prompt_hash": cfg.describe()["prompt_hash"],
+        "pipeline": cfg.describe(),
         "policy_version": policy.version,
+        "screened_out": screened_out,
+        "verifier_rejected": len(rejected),
         "batch": {"max_clauses": MAX_BATCH_CLAUSES, "max_chars": MAX_BATCH_CHARS},
         "n_documents": len(docs),
         "n_clauses": len(gold),
@@ -200,9 +212,10 @@ def main() -> None:
 
     out_dir = REPO_ROOT / "eval" / "results" / args.split
     out_dir.mkdir(parents=True, exist_ok=True)
-    stem = f"{meta['run_at'].replace(':', '')}_{client.model}_{args.prompt}" + (f"_n{args.contracts}" if args.contracts else "")
+    stem = f"{meta['run_at'].replace(':', '')}_{client.model}_{cfg.label}" + (f"_n{args.contracts}" if args.contracts else "")
     (out_dir / f"{stem}.json").write_text(json.dumps({
         "meta": meta, "per_rule": per_rule, "micro": micro, "doc_level": doc_level,
+        "verifier_rejected": rejected,
         "predictions": {cid: findings_out.get(cid, []) for cid in gold},
         "gold": {cid: sorted(g) for cid, g in gold.items()},
     }, indent=1), encoding="utf-8")

@@ -7,12 +7,13 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import documents
-from app.analysis import analyze_document
+from app.analysis import analyze_document, default_config
 from app.config import get_settings
 from app.db import get_session
 from app.llm import GeminiClient, LLMError
 from app.models import Clause, Document
 from app.parsing import ParseError
+from app.pipeline import PipelineConfig
 from app.policy import load_policy
 from app.schemas import AnalysisOut, DocumentDetail, DocumentSummary
 
@@ -111,10 +112,11 @@ def analyze(
     doc_id: uuid.UUID,
     session: Session = Depends(get_session),
     client=Depends(get_llm_client),
+    cfg: PipelineConfig = Depends(default_config),
 ) -> AnalysisOut:
     """Check every clause against the current policy. Slow on the free tier: about 30s per 20 clauses."""
     doc = _get(session, doc_id)
     try:
-        return analyze_document(client, load_policy(1), doc)
+        return analyze_document(client, load_policy(1), doc, cfg)
     except LLMError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"LLM request failed: {exc}") from exc
