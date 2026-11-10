@@ -4,6 +4,12 @@
 
 **Live demo: [doc-compliance-agent.vercel.app](https://doc-compliance-agent.vercel.app)**. Browse seven analyzed contracts and try the review queue. The free hosting sleeps when idle, so the first load can take about a minute.
 
+![A contract under review: per-rule status and the decisions routed to a human](docs/screenshots/contract-review.png)
+
+| Decisions cite the rule and quote the clause | Review queue | Dashboard |
+|---|---|---|
+| [![Decision cards](docs/screenshots/decisions.png)](docs/screenshots/decisions.png) | [![Review queue](docs/screenshots/review-queue.png)](docs/screenshots/review-queue.png) | [![Dashboard](docs/screenshots/dashboard.png)](docs/screenshots/dashboard.png) |
+
 Checks contracts against a written, numbered policy. Every decision cites the exact rule and quotes the clause it relies on; confident decisions are made automatically, uncertain ones go to a human reviewer, and everything is recorded in a tamper-evident audit log.
 
 Built on 510 real commercial contracts from [CUAD](https://www.atticusprojectai.org/cuad), evaluated on contracts the system never saw while it was being tuned, and run entirely on free tools.
