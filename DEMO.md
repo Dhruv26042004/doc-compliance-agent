@@ -9,7 +9,7 @@ docker compose up -d
 cd backend && uv run python -m scripts.seed_demo --reset   # skip if already seeded
 ```
 
-Open http://localhost:3000 and http://localhost:8000/docs in two tabs. Close other tabs and notifications.
+Open http://localhost:3000 and http://localhost:8000/docs in two tabs (or the live site, https://doc-compliance-agent.vercel.app and https://compliance-api-hk1j.onrender.com/docs; load both a minute early so they are awake). Close other tabs and notifications.
 
 ## Shots
 

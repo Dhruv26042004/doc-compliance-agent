@@ -1,5 +1,9 @@
 # Document Compliance System
 
+[![CI](https://github.com/Dhruv26042004/doc-compliance-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Dhruv26042004/doc-compliance-agent/actions/workflows/ci.yml)
+
+**Live demo: [doc-compliance-agent.vercel.app](https://doc-compliance-agent.vercel.app)**. Browse seven analyzed contracts and try the review queue. The free hosting sleeps when idle, so the first load can take about a minute.
+
 Checks contracts against a written, numbered policy. Every decision cites the exact rule and quotes the clause it relies on; confident decisions are made automatically, uncertain ones go to a human reviewer, and everything is recorded in a tamper-evident audit log.
 
 Built on 510 real commercial contracts from [CUAD](https://www.atticusprojectai.org/cuad), evaluated on contracts the system never saw while it was being tuned, and run entirely on free tools.
