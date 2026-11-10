@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     @field_validator("database_url")
     @classmethod
     def _use_psycopg_driver(cls, url: str) -> str:
+        # Tolerate values pasted from a dashboard snippet: surrounding whitespace or quotes,
+        # a leading "DATABASE_URL=", or Neon's "psql '...'" command.
+        url = url.strip()
+        url = url.removeprefix("DATABASE_URL=").removeprefix("psql ").strip().strip("'\"")
         # Hosted Postgres (Neon, Render, Supabase) hands out postgres:// or postgresql:// URLs.
         for prefix in ("postgres://", "postgresql://"):
             if url.startswith(prefix):
